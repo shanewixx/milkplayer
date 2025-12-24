@@ -627,7 +627,7 @@
                 ctx.stroke();
             }
             else if (mode === "Waveform") {
-                if (!waveArray) { 
+                if (!waveArray) {
                     ctx.shadowBlur = 0;
                 } else {
                     ctx.lineWidth = 4;
@@ -675,7 +675,6 @@
         
         const mascotConfig = {
             totalImages: 5,        
-            // interval: 60000, // Removed automatic interval
             sounds: ['1.ogg', '2.ogg']
         };
 
@@ -690,7 +689,6 @@
             img.id = 'mascot-img';
             img.src = '1.png';
             img.alt = 'Mascot';
-            
             img.addEventListener('click', () => {
                 currentImgIndex++;
                 if (currentImgIndex > mascotConfig.totalImages) currentImgIndex = 1;
@@ -698,24 +696,16 @@
                 const randIndex = Math.floor(Math.random() * mascotConfig.sounds.length);
                 const soundFile = mascotConfig.sounds[randIndex];
                 const audio = new Audio(soundFile);
+                audio.volume = 0.2;
                 const speed = 0.5 + Math.random(); 
                 audio.playbackRate = speed;
                 if (audio.preservesPitch !== undefined) audio.preservesPitch = false; 
                 else if (audio.mozPreservesPitch !== undefined) audio.mozPreservesPitch = false;
-                const playDuration = 1000 + (Math.random() * 2000); 
-
-                audio.play().then(() => {
-                    setTimeout(() => {
-                        audio.pause();
-                        audio.currentTime = 0;
-                    }, playDuration);
-                }).catch(e => console.log("Audio play failed/blocked", e));
+                audio.play().catch(e => console.log("Audio play failed/blocked", e));
             });
 
             container.appendChild(img);
             fxTab.appendChild(container);
-            
-            
         }
 
         initMascot();
