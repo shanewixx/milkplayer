@@ -532,10 +532,22 @@
             let prev = (currentTrackIndex - 1 + playlist.length) % playlist.length;
             loadTrack(prev);
         }
-        function saveCheck() {
-            alert("This feature requires Electron wrapper.");
-        }
+       async function saveCheck() {
+    if (!window.milk) {
+        alert("Saving is only available in desktop mode.");
+        return;
+    }
 
+    const data = {
+        playlist: playlist.map(f => f.name),
+        currentTrackIndex,
+        playbackRate,
+        volume
+    };
+
+    const ok = await window.milk.saveFile(data);
+    if (ok) alert("Saved successfully.");
+}
         document.body.addEventListener('dragover', e => e.preventDefault());
         document.body.addEventListener('drop', e => {
             e.preventDefault();
