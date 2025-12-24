@@ -171,6 +171,59 @@
         body.clear-mode #time-display { opacity: 0; }
         body.clear-mode #exit-zen-btn { display: block; }
         
+        /* INFO Modal Styles */
+        #info-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+
+        #info-window {
+            width: min(500px, 90vw);
+            max-height: 80vh;
+            background: #0a0000;
+            border: 2px solid #660000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #1a0000;
+            border-bottom: 1px solid #440000;
+            color: #ff3333;
+            font-size: 9px;
+        }
+
+        #info-close {
+            background: none;
+            border: none;
+            color: #ff3333;
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        #info-close:hover {
+            color: white;
+        }
+
+        #info-content {
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 8px;
+            line-height: 1.6;
+            color: #ff8888;
+        }
     </style>
 </head>
 <body>
@@ -198,7 +251,9 @@
                     <button onclick="playPrev()">&lt;&lt;</button>
                     <button id="btn-play" onclick="togglePlay()">PLAY</button>
                     <button onclick="playNext()">&gt;&gt;</button>
-                    <button onclick="toggleZen()">CM</button> <input type="file" id="file-input" accept="audio/*" multiple>
+                    <button onclick="toggleZen()">CM</button>
+                    <button onclick="openInfo()">:3с</button>
+                    <input type="file" id="file-input" accept="audio/*" multiple>
                     <button onclick="document.getElementById('file-input').click()">LOAD</button>
                     <button onclick="saveCheck()">SAVE</button>
                 </div>
@@ -245,6 +300,25 @@
         </div>
     </div>
 
+    <div id="info-overlay" onclick="closeInfo()">
+        <div id="info-window" onclick="event.stopPropagation()">
+            <div id="info-header">
+                <span>Nellix's Milkplayer</span>
+                <button id="info-close" onclick="closeInfo()">:3</button>
+            </div>
+
+            <div id="info-content">
+                <p>Thank you for using this app! I hope i didnt overcomplicate it at all and you enjoy spending time here</p>
+                <p>This project will keep being opensourced, so anyone could make anything they want with it. Im just tired of the greedy developers blocking half of the features under a paywall. Have fun please!</p>
+				<p>The site is being hosted and its files located at github https://github.com/shanewixx/milkplayer</p>
+				<p></p>
+				<p></p>
+				<p>My socials as listed: Discord - c6d31, Telegram - @nellix47, Spotify - c6d3 (Please check out my works!!)</p>
+				<p>https://open.spotify.com/artist/3X4E58GMS8hQJtBJOydFMe</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         const canvas = document.getElementById('visCanvas');
         const ctx = canvas.getContext('2d');
@@ -272,6 +346,20 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === "Control") {
                 toggleZen();
+            }
+        });
+
+        function openInfo() {
+            document.getElementById('info-overlay').style.display = 'flex';
+        }
+
+        function closeInfo() {
+            document.getElementById('info-overlay').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape" && document.getElementById('info-overlay').style.display === 'flex') {
+                closeInfo();
             }
         });
 
