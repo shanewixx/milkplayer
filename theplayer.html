@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Milky Player</title>
+    <style>
+        @font-face {
+            font-family: 'Retro Gaming';
+            src: local('Retro Gaming'), 
+                 url('https://cdn.discordapp.com/attachments/1357692682385887425/1453311555218440293/7Dn0iHU.ttf?ex=694cfd5b&is=694babdb&hm=f36658920888f7d681609ffc90bc2e20e7c24276932e48a50312c43b7743e3ea&') format('truetype');
+        }
+        body {
+            margin: 0; background-color: #050505; color: #ff0000;
+            font-family: 'Retro Gaming', 'Consolas', monospace;
+            overflow: hidden; user-select: none;
+        }
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; pointer-events: none;
+        }
+        #left-panel {
+            flex: 1; padding: 40px; display: flex; flex-direction: column;
+            pointer-events: auto; z-index: 10;
+        }
+        h1 {
+            font-size: 24px; color: #ff3333; text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            letter-spacing: 2px; margin: 0 0 10px 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+        .stat-text { font-size: 14px; color: #ff8888; font-weight: bold; margin-bottom: 5px; }
+        .sub-stat { font-size: 11px; color: #884444; margin-bottom: 20px; }
+        #progress-container {
+            width: 100%; height: 16px; background: #110000; border: 2px solid #440000;
+            cursor: pointer; margin-bottom: 40px; position: relative;
+        }
+        #progress-fill {
+            height: 100%; width: 0%; background: #ff0000;
+            box-shadow: 0 0 10px #ff0000; transition: width 0.1s linear;
+        }
+        .btn-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        button {
+            background: linear-gradient(to bottom, #2a0000, #110000);
+            color: #ff0000; border: 1px solid #880000; border-bottom: 3px solid #660000;
+            padding: 10px 20px; font-family: inherit; font-size: 12px; cursor: pointer;
+            border-radius: 4px; box-shadow: 0 0 15px rgba(255,0,0,0.2); transition: all 0.1s;
+            text-transform: uppercase;
+        }
+        button:hover { background: #440000; color: white; border-color: #ff3333; }
+        button:active { transform: translateY(2px); border-bottom: 1px solid #660000; }
+        .slider-row { display: flex; gap: 30px; margin-bottom: 20px; }
+        .slider-group { display: flex; flex-direction: column; align-items: flex-start; }
+        input[type=range] { accent-color: #ff0000; cursor: pointer; width: 140px; }
+        #right-panel {
+            width: 350px; background: rgba(5, 0, 0, 0.95);
+            border-left: 1px solid #440000;
+            box-shadow: -5px 0 30px rgba(100, 0, 0, 0.4);
+            display: flex; flex-direction: column; pointer-events: auto;
+            backdrop-filter: blur(10px);
+        }
+        .tabs { display: flex; background: #1a0000; border-bottom: 1px solid #440000; }
+        .tab {
+            flex: 1; padding: 12px; text-align: center; cursor: pointer;
+            border-right: 1px solid #440000; color: #880000; font-size: 12px;
+        }
+        .tab.active { background: #440000; color: #ff0000; }
+        .tab-content { padding: 15px; flex: 1; overflow-y: auto; display: none; }
+        .tab-content.active { display: block; }
+        #search-bar {
+            width: 100%; background: #0a0000; border: 1px solid #660000;
+            color: #ff0000; padding: 8px; font-family: inherit; margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        #playlist-list { list-style: none; padding: 0; margin: 0; }
+        #playlist-list li {
+            padding: 10px; border-bottom: 1px solid #220000; font-size: 12px; cursor: pointer;
+            color: #cc0000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #playlist-list li:hover { background: rgba(50, 0, 0, 0.5); }
+        #playlist-list li.active { background: rgba(255, 0, 0, 0.2); border-left: 3px solid red; color: #ff8888; }
+        .fx-group { border: 1px solid #440000; padding: 10px; margin-bottom: 12px; background: rgba(20,0,0,0.3); }
+        .fx-title { color: #aa0000; margin-bottom: 5px; font-size: 12px; }
+        .fx-control { display: flex; align-items: center; gap: 10px; }
+        .fx-val { width: 45px; text-align: right; color: #ff8888; font-size: 11px; }
+        canvas { position: absolute; top: 0; left: 0; z-index: 0; }
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+    <canvas id="visCanvas"></canvas>
+    <div id="ui-layer">
+        <div id="left-panel">
+            <h1 id="track-title">DRAG FILES HERE</h1>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <div class="stat-text" id="time-display">00:00 / 00:00</div>
+                <div class="stat-text" id="bpm-display">BPM: ---</div>
+            </div>
+            <div class="sub-stat" id="total-stats">Session: 00:00:00</div>
+            <div id="progress-container" onclick="seekAudio(event)">
+                <div id="progress-fill"></div>
+            </div>
+            <div style="margin-top: auto;">
+                <div class="btn-row">
+                    <button onclick="playPrev()">&lt;&lt;</button>
+                    <button id="btn-play" onclick="togglePlay()">PLAY</button>
+                    <button onclick="playNext()">&gt;&gt;</button>
+                    <button onclick="saveCheck()">SAVE</button>
+                    <input type="file" id="file-input" accept="audio/*" multiple>
+                    <button onclick="document.getElementById('file-input').click()">LOAD</button>
+                </div>
+                <div class="slider-row">
+                    <div class="slider-group">
+                        <label id="lbl-rate">RATE: 1.00x</label>
+                        <input type="range" id="rate-slider" min="50" max="200" value="100" oninput="updateSpeed(this.value)">
+                    </div>
+                    <div class="slider-group">
+                        <label id="lbl-vol">VOL: 100%</label>
+                        <input type="range" id="vol-slider" min="0" max="150" value="100" oninput="updateVol(this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="right-panel">
+            <div class="tabs">
+                <div class="tab" onclick="openTab('playlist')">TRACKS</div>
+                <div class="tab active" onclick="openTab('fx')">FX</div>
+                <div class="tab" onclick="openTab('vis')">VISUALS</div>
+            </div>
+            <div id="tab-playlist" class="tab-content">
+                <input type="text" id="search-bar" placeholder="SEARCH..." onkeyup="filterPlaylist()">
+                <ul id="playlist-list"></ul>
+            </div>
+            <div id="tab-fx" class="tab-content active">
+            </div>
+            <div id="tab-vis" class="tab-content">
+                <div class="fx-group">
+                    <div class="fx-title">MODE</div>
+                    <select id="vis-mode" style="width: 100%; background: #110000; color: red; border: 1px solid #440000; padding: 5px; font-family: inherit;">
+                        <option value="Waveform">Waveform (32-bit)</option>
+                        <option value="Linear Bars">Linear Bars</option>
+                        <option value="Circular Wave">Circular Wave</option>
+                    </select>
+                </div>
+                <div class="fx-group">
+                    <div class="fx-title">ELEMENTS</div>
+                    <label><input type="checkbox" id="chk-particles" checked> Show Particles</label><br>
+                    <label><input type="checkbox" id="chk-mouse" checked> Mouse Trail</label><br>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('visCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, cx, cy;
+        let audioCtx, sourceNode, analyser;
+        let gainMaster, distNode, lpNode, tremoloGain, tremoloOsc, delayNode, delayFB, delayWet, revNode, revWet;
+        let playlist = [];
+        let currentTrackIndex = -1;
+        let audioBuffer = null;
+        let isPlaying = false;
+        let playbackRate = 1.0;
+        let volume = 1.0;
+        let songStartOffset = 0;
+        let anchorTime = 0;
+        let dataArray, waveArray;
+        let bassEnergy = 0;
+        let particles = [], mouseParticles = [];
+        let sessionStart = Date.now();
+        let lastBeat = 0;
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AC();
+            audioCtx.destination.channelCount = 2;
+            audioCtx.destination.channelCountMode = 'explicit';
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 4096;
+            analyser.smoothingTimeConstant = 0.85;
+            analyser.channelCount = 2;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            waveArray = new Float32Array(analyser.fftSize);
+            gainMaster = audioCtx.createGain();
+            gainMaster.gain.value = volume;
+            gainMaster.channelCount = 2;
+            distNode = audioCtx.createWaveShaper();
+            distNode.curve = makeDistortionCurve(0);
+            distNode.oversample = '4x';
+            distNode.channelCount = 2;
+            lpNode = audioCtx.createBiquadFilter();
+            lpNode.type = "lowpass";
+            lpNode.frequency.value = 22000;
+            tremoloGain = audioCtx.createGain();
+            tremoloOsc = audioCtx.createOscillator();
+            tremoloOsc.frequency.value = 4;
+            tremoloOsc.start();
+            const lfoAmp = audioCtx.createGain();
+            lfoAmp.gain.value = 0;
+            tremoloOsc.connect(lfoAmp).connect(tremoloGain.gain);
+            window.lfoAmp = lfoAmp;
+            delayNode = audioCtx.createDelay(5.0);
+            delayNode.delayTime.value = 0.4;
+            delayFB = audioCtx.createGain();
+            delayFB.gain.value = 0.4;
+            delayWet = audioCtx.createGain();
+            delayWet.gain.value = 0;
+            delayNode.connect(delayFB).connect(delayNode);
+            revNode = audioCtx.createConvolver();
+            revNode.buffer = createImpulse(2.0);
+            revWet = audioCtx.createGain();
+            revWet.gain.value = 0;
+        }
+
+        function createImpulse(duration) {
+            const rate = audioCtx.sampleRate;
+            const len = rate * duration;
+            const buf = audioCtx.createBuffer(2, len, rate);
+            for (let i = 0; i < 2; i++) {
+                const ch = buf.getChannelData(i);
+                for (let j = 0; j < len; j++) {
+                    ch[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / len, 2);
+                }
+            }
+            return buf;
+        }
+
+        function makeDistortionCurve(k) {
+            const n = 44100, curve = new Float32Array(n), deg = Math.PI / 180;
+            for (let i = 0; i < n; ++i) {
+                let x = i * 2 / n - 1;
+                curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+            }
+            return curve;
+        }
+
+        async function loadTrack(index) {
+            if (index < 0 || index >= playlist.length) return;
+            initAudio();
+            currentTrackIndex = index;
+            updatePlaylistUI();
+            const file = playlist[index];
+            document.getElementById('track-title').innerText = "LOADING: " + file.name.toUpperCase();
+            const reader = new FileReader();
+            reader.onload = e => {
+                audioCtx.decodeAudioData(e.target.result, buffer => {
+                    audioBuffer = buffer;
+                    document.getElementById('track-title').innerText = file.name.toUpperCase();
+                    songStartOffset = 0;
+                    playAudio();
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function playAudio() {
+            if (!audioBuffer) return;
+            if (sourceNode) {
+                sourceNode.onended = null;
+                try { sourceNode.stop(); } catch(e){}
+                sourceNode.disconnect();
+            }
+            sourceNode = audioCtx.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.playbackRate.value = playbackRate;
+            sourceNode.connect(distNode);
+            distNode.connect(lpNode);
+            lpNode.connect(tremoloGain);
+            tremoloGain.connect(gainMaster);
+            sourceNode.connect(delayNode).connect(delayWet).connect(gainMaster);
+            sourceNode.connect(revNode).connect(revWet).connect(gainMaster);
+            gainMaster.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            anchorTime = audioCtx.currentTime;
+            sourceNode.start(0, songStartOffset);
+            isPlaying = true;
+            document.getElementById('btn-play').innerText = "PAUSE";
+            sourceNode.onended = () => {
+                playNext();
+            };
+        }
+
+        function togglePlay() {
+            if (!audioBuffer) {
+                if (playlist.length > 0) loadTrack(0);
+                return;
+            }
+            if (isPlaying) {
+                const now = audioCtx.currentTime;
+                songStartOffset = songStartOffset + (now - anchorTime) * playbackRate;
+                audioCtx.suspend();
+                isPlaying = false;
+                document.getElementById('btn-play').innerText = "RESUME";
+            } else {
+                anchorTime = audioCtx.currentTime;
+                audioCtx.resume();
+                isPlaying = true;
+                document.getElementById('btn-play').innerText = "PAUSE";
+            }
+        }
+
+        function seekAudio(e) {
+            if (!audioBuffer) return;
+            const rect = document.getElementById('progress-container').getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const ratio = Math.max(0, Math.min(1, x / rect.width));
+            songStartOffset = ratio * audioBuffer.duration;
+            if (isPlaying) playAudio();
+            else document.getElementById('progress-fill').style.width = (ratio*100) + "%";
+        }
+
+        function updateSpeed(val) {
+            const newRate = val / 100;
+            if (isPlaying && audioBuffer) {
+                const now = audioCtx.currentTime;
+                const currentPos = songStartOffset + (now - anchorTime) * playbackRate;
+                songStartOffset = currentPos;
+                anchorTime = now;
+            }
+            playbackRate = newRate;
+            document.getElementById('lbl-rate').innerText = `RATE: ${playbackRate.toFixed(2)}x`;
+            if (sourceNode) sourceNode.playbackRate.value = playbackRate;
+        }
+
+        function updateVol(val) {
+            volume = val / 100;
+            document.getElementById('lbl-vol').innerText = `VOL: ${val}%`;
+            if (gainMaster) gainMaster.gain.value = volume;
+        }
+
+        function playNext() {
+            if (playlist.length === 0) return;
+            let next = (currentTrackIndex + 1) % playlist.length;
+            loadTrack(next);
+        }
+        function playPrev() {
+            if (playlist.length === 0) return;
+            let prev = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            loadTrack(prev);
+        }
+        function saveCheck() {
+            alert("This feature requires Electron wrapper.");
+        }
+
+        document.body.addEventListener('dragover', e => e.preventDefault());
+        document.body.addEventListener('drop', e => {
+            e.preventDefault();
+            addFiles(e.dataTransfer.files);
+        });
+        document.getElementById('file-input').addEventListener('change', e => addFiles(e.target.files));
+
+        function addFiles(files) {
+            for (let f of files) playlist.push(f);
+            updatePlaylistUI();
+            if (currentTrackIndex === -1 && playlist.length > 0) loadTrack(0);
+        }
+
+        function updatePlaylistUI() {
+            const list = document.getElementById('playlist-list');
+            const filter = document.getElementById('search-bar').value.toLowerCase();
+            list.innerHTML = "";
+            playlist.forEach((file, idx) => {
+                if (file.name.toLowerCase().includes(filter)) {
+                    const li = document.createElement('li');
+                    li.innerText = file.name;
+                    if (idx === currentTrackIndex) li.className = 'active';
+                    li.ondblclick = () => loadTrack(idx);
+                    list.appendChild(li);
+                }
+            });
+        }
+        window.filterPlaylist = updatePlaylistUI;
+
+        const fxConfig = [
+            { id: 'echo', name: 'ECHO (DELAY)', def: 0 },
+            { id: 'reverb', name: 'REVERB (SPACE)', def: 0 },
+            { id: 'dist', name: 'DISTORTION', def: 0 },
+            { id: 'lp', name: 'MUFFLE (LP)', def: 0 },
+            { id: 'trem', name: 'PULSE (TREMOLO)', def: 0 }
+        ];
+
+        const fxCont = document.getElementById('tab-fx');
+        fxConfig.forEach(fx => {
+            const div = document.createElement('div');
+            div.className = 'fx-group';
+            div.innerHTML = `
+                <div class="fx-title">${fx.name}</div>
+                <div class="fx-control">
+                    <input type="range" min="0" max="100" value="${fx.def}" oninput="setFX('${fx.id}', this.value)">
+                    <div class="fx-val" id="val-${fx.id}">${fx.def}%</div>
+                </div>`;
+            fxCont.appendChild(div);
+        });
+
+        window.setFX = (id, val) => {
+            document.getElementById(`val-${id}`).innerText = val + "%";
+            if (!audioCtx) return;
+            const v = val / 100;
+            const t = audioCtx.currentTime;
+            if (id === 'echo') delayWet.gain.setTargetAtTime(v, t, 0.1);
+            if (id === 'reverb') revWet.gain.setTargetAtTime(v, t, 0.1);
+            if (id === 'dist') distNode.curve = makeDistortionCurve(val * 4);
+            if (id === 'lp') {
+                const freq = v === 0 ? 22000 : 22000 * Math.pow(0.02, v);
+                lpNode.frequency.setTargetAtTime(freq, t, 0.1);
+            }
+            if (id === 'trem') window.lfoAmp.gain.setTargetAtTime(v, t, 0.1);
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cx = (width - 350) / 2; cy = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(isMouse, mx, my) {
+                this.isMouse = isMouse;
+                this.reset(mx, my, true);
+            }
+            reset(mx, my, first) {
+                if (this.isMouse) {
+                    this.x = mx + (Math.random()*4-2); this.y = my;
+                    this.size = Math.random()*3+1; this.speed = Math.random()*2+1;
+                    this.life = 1.0;
+                } else {
+                    this.x = Math.random()*width;
+                    this.y = first ? Math.random()*height : -10;
+                    this.size = Math.random()*3+1;
+                    this.speed = Math.random()*1.5+0.5;
+                    this.baseOp = Math.random()*0.4+0.1;
+                    this.op = this.baseOp;
+                }
+            }
+            update(bass) {
+                this.y += this.speed * (1 + bass * 0.5);
+                if (this.isMouse) {
+                    this.life -= 0.02;
+                } else {
+                    this.op = this.baseOp + (bass * 0.4);
+                    if (this.y > height) this.reset();
+                }
+            }
+            draw(ctx) {
+                const alpha = this.isMouse ? this.life : this.op;
+                ctx.fillStyle = `rgba(${this.isMouse?'255,50,50':'200,0,0'}, ${alpha})`;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+        for(let i=0; i<120; i++) particles.push(new Particle(false));
+
+        document.addEventListener('mousemove', e => {
+            if (document.getElementById('chk-mouse').checked) {
+                mouseParticles.push(new Particle(true, e.clientX, e.clientY));
+            }
+        });
+
+        function render() {
+            requestAnimationFrame(render);
+            ctx.fillStyle = "#050505"; ctx.fillRect(0,0,width,height);
+            let curr = 0;
+            let dur = 1;
+            if (isPlaying && !audioCtx.paused && audioBuffer) {
+                analyser.getByteFrequencyData(dataArray);
+                analyser.getFloatTimeDomainData(waveArray);
+                const now = audioCtx.currentTime;
+                curr = songStartOffset + (now - anchorTime) * playbackRate;
+                dur = audioBuffer.duration;
+                if (curr > dur) curr = dur;
+                if (dur > 0) {
+                    document.getElementById('progress-fill').style.width = ((curr/dur)*100) + "%";
+                    const fmt = t => `${Math.floor(t/60).toString().padStart(2,'0')}:${Math.floor(t%60).toString().padStart(2,'0')}`;
+                    document.getElementById('time-display').innerText = `${fmt(curr)} / ${fmt(dur)}`;
+                }
+                let bSum = 0;
+                for(let i=0; i<20; i++) bSum += dataArray[i];
+                bassEnergy = (bSum / 20) / 255;
+                if (bassEnergy > 0.7 && Date.now() - lastBeat > 400) {
+                    const bpm = 120 + Math.floor(Math.random()*10 - 5);
+                    document.getElementById('bpm-display').innerText = `BPM: ${bpm}`;
+                    lastBeat = Date.now();
+                }
+            } else {
+                bassEnergy *= 0.9;
+            }
+            const mode = document.getElementById('vis-mode').value;
+            if (mode === "Linear Bars") {
+                const count = 100;
+                const barW = (width-400)/count;
+                for(let i=0; i<count; i++) {
+                    const v = dataArray[i*2];
+                    const h = (v/255) * (height*0.6);
+                    ctx.fillStyle = `rgba(${v+50}, 0, 0, 0.9)`;
+                    ctx.fillRect(50 + i*barW, height-h-50, barW-1, h);
+                }
+            }
+            else if (mode === "Circular Wave") {
+                const rad = Math.min(width, height) * 0.25;
+                ctx.strokeStyle = `rgba(255, 20, 20, 0.8)`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for(let i=0; i<180; i++) {
+                    const ang = (i / 90) * Math.PI;
+                    const v = dataArray[i] / 255.0;
+                    const r = rad + (v * 200 * bassEnergy);
+                    const x = cx + Math.cos(ang) * r;
+                    const y = cy + Math.sin(ang) * r;
+                    if (i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+            else if (mode === "Waveform") {
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = "#ff3333";
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = "#ff0000";
+                ctx.beginPath();
+                const sliceW = (width - 350) / waveArray.length;
+                let x = 0;
+                for(let i = 0; i < waveArray.length; i+=4) {
+                    const v = waveArray[i];
+                    const y = cy + (v * (height * 0.6));
+                    if(i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                    x += sliceW * 4;
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            if (document.getElementById('chk-particles').checked) {
+                particles.forEach(p => { p.update(bassEnergy); p.draw(ctx); });
+            }
+            mouseParticles.forEach((p, i) => {
+                p.update(bassEnergy); p.draw(ctx);
+                if (p.life <= 0) mouseParticles.splice(i,1);
+            });
+            const diff = Math.floor((Date.now()-sessionStart)/1000);
+            const hh = Math.floor(diff/3600).toString().padStart(2,'0');
+            const mm = Math.floor((diff%3600)/60).toString().padStart(2,'0');
+            const ss = (diff%60).toString().padStart(2,'0');
+            document.getElementById('total-stats').innerText = `Session: ${hh}:${mm}:${ss}`;
+        }
+
+        window.openTab = (name) => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if(name==='playlist') document.querySelector('.tab:nth-child(1)').classList.add('active');
+            if(name==='fx') document.querySelector('.tab:nth-child(2)').classList.add('active');
+            if(name==='vis') document.querySelector('.tab:nth-child(3)').classList.add('active');
+            document.getElementById('tab-'+name).classList.add('active');
+        }
+
+        render();
+    </script>
+</body>
+</html>
