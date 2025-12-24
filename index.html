@@ -627,27 +627,26 @@
                 ctx.stroke();
             }
             else if (mode === "Waveform") {
-                if (!waveArray) {
+                if (!waveArray) { 
                     ctx.shadowBlur = 0;
-                    return; 
+                } else {
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = "#ff3333";
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = "#ff0000";
+                    ctx.beginPath();
+                    const sliceW = width / waveArray.length;
+                    let x = 0;
+                    for(let i = 0; i < waveArray.length; i+=4) {
+                        const v = waveArray[i];
+                        const y = cy + (v * (height * 0.6));
+                        if(i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                        x += sliceW * 4;
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
                 }
-
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = "#ff3333";
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = "#ff0000";
-                ctx.beginPath();
-                const sliceW = width / waveArray.length;
-                let x = 0;
-                for(let i = 0; i < waveArray.length; i+=4) {
-                    const v = waveArray[i];
-                    const y = cy + (v * (height * 0.6));
-                    if(i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                    x += sliceW * 4;
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
             }
             if (document.getElementById('chk-particles').checked) {
                 particles.forEach(p => { p.update(bassEnergy); p.draw(ctx); });
@@ -673,9 +672,10 @@
         }
 
         render();
+        
         const mascotConfig = {
             totalImages: 5,        
-            interval: 60000,       
+            // interval: 60000, // Removed automatic interval
             sounds: ['1.ogg', '2.ogg']
         };
 
@@ -692,21 +692,30 @@
             img.alt = 'Mascot';
             
             img.addEventListener('click', () => {
+                currentImgIndex++;
+                if (currentImgIndex > mascotConfig.totalImages) currentImgIndex = 1;
+                img.src = `${currentImgIndex}.png`;
                 const randIndex = Math.floor(Math.random() * mascotConfig.sounds.length);
                 const soundFile = mascotConfig.sounds[randIndex];
                 const audio = new Audio(soundFile);
-                audio.volume = 0.5;
-                audio.play().catch(e => console.log("Audio needed user interaction first", e));
+                const speed = 0.5 + Math.random(); 
+                audio.playbackRate = speed;
+                if (audio.preservesPitch !== undefined) audio.preservesPitch = false; 
+                else if (audio.mozPreservesPitch !== undefined) audio.mozPreservesPitch = false;
+                const playDuration = 1000 + (Math.random() * 2000); 
+
+                audio.play().then(() => {
+                    setTimeout(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }, playDuration);
+                }).catch(e => console.log("Audio play failed/blocked", e));
             });
 
             container.appendChild(img);
             fxTab.appendChild(container);
-
-            setInterval(() => {
-                currentImgIndex++;
-                if (currentImgIndex > mascotConfig.totalImages) currentImgIndex = 1;
-                img.src = `${currentImgIndex}.png`;
-            }, mascotConfig.interval); 
+            
+            
         }
 
         initMascot();
