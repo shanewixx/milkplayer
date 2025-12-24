@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Milky Player</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
     <style>
-        @font-face {
-            font-family: 'Retro Gaming';
-            src: local('Retro Gaming'), 
-                 url('https://cdn.discordapp.com/attachments/1357692682385887425/1453326777484185713/Retro_Gaming.ttf?ex=694d0b89&is=694bba09&hm=c53e867db3d832bcf00449c449c1a5e5fcd2c1c4fa781fddd9923463ae214849&') format('truetype');
-        }
         body {
             margin: 0; background-color: #050505; color: #ff0000;
-            font-family: 'Retro Gaming', 'Consolas', monospace;
+            font-family: 'Press Start 2P', 'Consolas', monospace;
             overflow: hidden; user-select: none;
             -webkit-tap-highlight-color: transparent;
+            font-size: 10px; 
+            line-height: 1.5;
         }
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -32,13 +34,13 @@
             min-width: 0;
         }
         h1 {
-            font-size: clamp(18px, 4vw, 32px); 
+            font-size: clamp(14px, 3vw, 24px); /* Adjusted for pixel font size */
             color: #ff3333; text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
             letter-spacing: 2px; margin: 0 0 10px 0; 
             overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
         }
-        .stat-text { font-size: 14px; color: #ff8888; font-weight: bold; margin-bottom: 5px; }
-        .sub-stat { font-size: 11px; color: #884444; margin-bottom: 20px; }
+        .stat-text { font-size: 10px; color: #ff8888; font-weight: bold; margin-bottom: 5px; }
+        .sub-stat { font-size: 8px; color: #884444; margin-bottom: 20px; }
         
         #progress-container {
             width: 100%; height: 20px;
@@ -64,12 +66,13 @@
         button {
             background: linear-gradient(to bottom, #2a0000, #110000);
             color: #ff0000; border: 1px solid #880000; border-bottom: 3px solid #660000;
-            padding: 12px 24px;
-            font-family: inherit; font-size: 12px; cursor: pointer;
+            padding: 12px 12px;
+            font-family: inherit; font-size: 8px; cursor: pointer;
             border-radius: 4px; box-shadow: 0 0 15px rgba(255,0,0,0.2); transition: all 0.1s;
             text-transform: uppercase;
             flex-grow: 1;
             max-width: 120px;
+            line-height: 1.5;
         }
         button:hover { background: #440000; color: white; border-color: #ff3333; }
         button:active { transform: translateY(2px); border-bottom: 1px solid #660000; }
@@ -91,7 +94,7 @@
         .tabs { display: flex; background: #1a0000; border-bottom: 1px solid #440000; min-height: 45px; }
         .tab {
             flex: 1; padding: 0; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border-right: 1px solid #440000; color: #880000; font-size: 12px;
+            cursor: pointer; border-right: 1px solid #440000; color: #880000; font-size: 8px;
         }
         .tab.active { background: #440000; color: #ff0000; }
         .tab-content { padding: 15px; flex: 1; overflow-y: auto; display: none; }
@@ -100,21 +103,45 @@
         #search-bar {
             width: 100%; background: #0a0000; border: 1px solid #660000;
             color: #ff0000; padding: 10px; font-family: inherit; margin-bottom: 10px;
-            box-sizing: border-box; font-size: 14px;
+            box-sizing: border-box; font-size: 10px;
         }
         #playlist-list { list-style: none; padding: 0; margin: 0; }
         #playlist-list li {
-            padding: 12px; border-bottom: 1px solid #220000; font-size: 13px; cursor: pointer;
+            padding: 12px; border-bottom: 1px solid #220000; font-size: 9px; cursor: pointer;
             color: #cc0000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            line-height: 1.5;
         }
         #playlist-list li:hover { background: rgba(50, 0, 0, 0.5); }
         #playlist-list li.active { background: rgba(255, 0, 0, 0.2); border-left: 3px solid red; color: #ff8888; }
         
         .fx-group { border: 1px solid #440000; padding: 10px; margin-bottom: 12px; background: rgba(20,0,0,0.3); }
-        .fx-title { color: #aa0000; margin-bottom: 5px; font-size: 12px; }
+        .fx-title { color: #aa0000; margin-bottom: 5px; font-size: 8px; }
         .fx-control { display: flex; align-items: center; gap: 10px; }
-        .fx-val { width: 45px; text-align: right; color: #ff8888; font-size: 11px; }
+        .fx-val { width: 45px; text-align: right; color: #ff8888; font-size: 8px; }
         
+        #mascot-container {
+            margin-top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+        #mascot-img {
+            width: 200px; 
+            height: 200px;
+            object-fit: contain;
+            image-rendering: pixelated;
+            cursor: pointer;
+            border: 2px solid #440000;
+            background: #000;
+            transition: transform 0.1s, border-color 0.2s;
+        }
+
+        #mascot-img:hover { border-color: #ff3333; }
+        #mascot-img:active { transform: scale(0.95); border-color: #ffffff; }
+
         canvas { position: absolute; top: 0; left: 0; z-index: 0; }
         #file-input { display: none; }
 
@@ -135,8 +162,8 @@
             }
             .gui-controls { margin-top: 10px; gap: 10px; }
             .btn-row { justify-content: space-between; gap: 8px; }
-            button { padding: 10px; font-size: 10px; max-width: none; }
-            h1 { font-size: 20px; }
+            button { padding: 10px; font-size: 8px; max-width: none; }
+            h1 { font-size: 14px; }
         }
 
         body.clear-mode #right-panel { display: none !important; }
@@ -198,7 +225,8 @@
                 <input type="text" id="search-bar" placeholder="SEARCH..." onkeyup="filterPlaylist()">
                 <ul id="playlist-list"></ul>
             </div>
-            <div id="tab-fx" class="tab-content active"></div>
+            <div id="tab-fx" class="tab-content active">
+                </div>
             <div id="tab-vis" class="tab-content">
                 <div class="fx-group">
                     <div class="fx-title">MODE</div>
@@ -640,6 +668,44 @@
         }
 
         render();
+        const mascotConfig = {
+            totalImages: 5,        
+            interval: 60000,       
+            sounds: ['1.ogg', '2.ogg']
+        };
+
+        let currentImgIndex = 1;
+
+        function initMascot() {
+            const fxTab = document.getElementById('tab-fx');
+            const container = document.createElement('div');
+            container.id = 'mascot-container';
+            
+            const img = document.createElement('img');
+            img.id = 'mascot-img';
+            img.src = '1.png';
+            img.alt = 'Mascot';
+            
+            img.addEventListener('click', () => {
+                const randIndex = Math.floor(Math.random() * mascotConfig.sounds.length);
+                const soundFile = mascotConfig.sounds[randIndex];
+                const audio = new Audio(soundFile);
+                audio.volume = 0.5;
+                audio.play().catch(e => console.log("Audio needed user interaction first", e));
+            });
+
+            container.appendChild(img);
+            fxTab.appendChild(container);
+
+            setInterval(() => {
+                currentImgIndex++;
+                if (currentImgIndex > mascotConfig.totalImages) currentImgIndex = 1;
+                img.src = `${currentImgIndex}.png`;
+            }, mascotConfig.interval); 
+        }
+
+        initMascot();
+
     </script>
 </body>
 </html>
