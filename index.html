@@ -627,6 +627,11 @@
                 ctx.stroke();
             }
             else if (mode === "Waveform") {
+                if (!waveArray) {
+                    ctx.shadowBlur = 0;
+                    return; 
+                }
+
                 ctx.lineWidth = 4;
                 ctx.strokeStyle = "#ff3333";
                 ctx.shadowBlur = 20;
