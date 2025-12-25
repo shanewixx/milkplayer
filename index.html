@@ -6,9 +6,11 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-G0XJG827K7');
 </script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Milky Player</title>
@@ -26,6 +28,43 @@
             font-size: 10px; 
             line-height: 1.5;
         }
+        
+        .scanlines {
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 9999;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            animation: scanlineAnim 0.2s linear infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes scanlineAnim {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes pulseGreen {
+            0% { text-shadow: 0 0 5px #00ff00; opacity: 1; }
+            50% { text-shadow: 0 0 15px #00ff00; opacity: 0.7; }
+            100% { text-shadow: 0 0 5px #00ff00; opacity: 1; }
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; pointer-events: none;
@@ -40,6 +79,7 @@
             pointer-events: auto; 
             z-index: 10;
             min-width: 0;
+            animation: slideInLeft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
         h1 {
             font-size: clamp(14px, 3vw, 24px); 
@@ -50,12 +90,21 @@
         .stat-text { font-size: 10px; color: #ff8888; font-weight: bold; margin-bottom: 5px; }
         .sub-stat { font-size: 8px; color: #884444; margin-bottom: 20px; }
         
+        #live-users-display {
+            color: #00ff00; 
+            animation: pulseGreen 3s infinite ease-in-out;
+            margin-top: 5px;
+        }
+
         #progress-container {
             width: 100%; height: 20px;
             background: #110000; border: 2px solid #440000;
             cursor: pointer; margin-bottom: 20px; position: relative;
             touch-action: none;
+            transition: border-color 0.2s;
         }
+        #progress-container:hover { border-color: #ff0000; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+
         #progress-fill {
             height: 100%; width: 0%; background: #ff0000;
             box-shadow: 0 0 10px #ff0000; transition: width 0.1s linear;
@@ -76,20 +125,28 @@
             color: #ff0000; border: 1px solid #880000; border-bottom: 3px solid #660000;
             padding: 12px 12px;
             font-family: inherit; font-size: 8px; cursor: pointer;
-            border-radius: 4px; box-shadow: 0 0 15px rgba(255,0,0,0.2); transition: all 0.1s;
+            border-radius: 4px; box-shadow: 0 0 5px rgba(255,0,0,0.1); transition: all 0.2s;
             text-transform: uppercase;
             flex-grow: 1;
             max-width: 120px;
             line-height: 1.5;
+            position: relative; overflow: hidden;
         }
-        button:hover { background: #440000; color: white; border-color: #ff3333; }
-        button:active { transform: translateY(2px); border-bottom: 1px solid #660000; }
+        button::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,0,0,0.2), transparent);
+            transition: 0.5s;
+        }
+        button:hover::after { left: 100%; }
+        button:hover { background: #440000; color: white; border-color: #ff3333; box-shadow: 0 0 15px rgba(255,0,0,0.6); transform: translateY(-1px); }
+        button:active { transform: translateY(2px); border-bottom: 1px solid #660000; box-shadow: 0 0 5px rgba(255,0,0,0.3); }
         button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(100%); }
         
         .slider-row { display: flex; gap: 20px; flex-wrap: wrap; }
         .slider-group { display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 120px;}
-        input[type=range] { accent-color: #ff0000; cursor: pointer; width: 100%; height: 20px; }
-        
+        input[type=range] { accent-color: #ff0000; cursor: pointer; width: 100%; height: 20px; transition: filter 0.2s; }
+        input[type=range]:hover { filter: drop-shadow(0 0 5px rgba(255,0,0,0.5)); }
+
         #right-panel {
             width: 350px; 
             background: rgba(5, 0, 0, 0.95);
@@ -98,32 +155,38 @@
             display: flex; flex-direction: column; pointer-events: auto;
             backdrop-filter: blur(10px);
             transition: transform 0.5s ease, opacity 0.5s ease;
+            animation: slideInRight 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
         
         .tabs { display: flex; background: #1a0000; border-bottom: 1px solid #440000; min-height: 45px; }
         .tab {
             flex: 1; padding: 0; display: flex; align-items: center; justify-content: center;
             cursor: pointer; border-right: 1px solid #440000; color: #880000; font-size: 8px;
+            transition: all 0.2s;
         }
-        .tab.active { background: #440000; color: #ff0000; }
+        .tab:hover { background: #2a0000; color: #ff5555; }
+        .tab.active { background: #440000; color: #ff0000; box-shadow: inset 0 -3px 0 #ff0000; }
         .tab-content { padding: 15px; flex: 1; overflow-y: auto; display: none; }
-        .tab-content.active { display: block; }
+        .tab-content.active { display: block; animation: slideInRight 0.3s ease-out; }
         
         #search-bar {
             width: 100%; background: #0a0000; border: 1px solid #660000;
             color: #ff0000; padding: 10px; font-family: inherit; margin-bottom: 10px;
-            box-sizing: border-box; font-size: 10px;
+            box-sizing: border-box; font-size: 10px; transition: box-shadow 0.2s;
         }
+        #search-bar:focus { outline: none; box-shadow: 0 0 10px rgba(255,0,0,0.4); border-color: #ff0000; }
+
         #playlist-list { list-style: none; padding: 0; margin: 0; }
         #playlist-list li {
             padding: 12px; border-bottom: 1px solid #220000; font-size: 9px; cursor: pointer;
             color: #cc0000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            line-height: 1.5;
+            line-height: 1.5; transition: all 0.15s;
         }
-        #playlist-list li:hover { background: rgba(50, 0, 0, 0.5); }
-        #playlist-list li.active { background: rgba(255, 0, 0, 0.2); border-left: 3px solid red; color: #ff8888; }
+        #playlist-list li:hover { background: rgba(50, 0, 0, 0.5); padding-left: 18px; color: #ff5555; }
+        #playlist-list li.active { background: rgba(255, 0, 0, 0.2); border-left: 3px solid red; color: #ff8888; padding-left: 15px; }
         
-        .fx-group { border: 1px solid #440000; padding: 10px; margin-bottom: 12px; background: rgba(20,0,0,0.3); }
+        .fx-group { border: 1px solid #440000; padding: 10px; margin-bottom: 12px; background: rgba(20,0,0,0.3); transition: border-color 0.2s; }
+        .fx-group:hover { border-color: #880000; }
         .fx-title { color: #aa0000; margin-bottom: 5px; font-size: 8px; }
         .fx-control { display: flex; align-items: center; gap: 10px; }
         .fx-val { width: 45px; text-align: right; color: #ff8888; font-size: 8px; }
@@ -137,9 +200,9 @@
             width: 200px; height: 200px; object-fit: contain;
             image-rendering: pixelated; cursor: pointer;
             border: 2px solid #440000; background: #000;
-            transition: transform 0.1s, border-color 0.2s;
+            transition: transform 0.1s, border-color 0.2s, box-shadow 0.2s;
         }
-        #mascot-img:hover { border-color: #ff3333; }
+        #mascot-img:hover { border-color: #ff3333; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
         #mascot-img:active { transform: scale(0.95); border-color: #ffffff; }
 
         canvas { position: absolute; top: 0; left: 0; z-index: 0; }
@@ -151,13 +214,13 @@
             border: 1px solid #ff3333; color: #ff3333;
             padding: 10px 20px; border-radius: 4px; cursor: pointer;
             font-family: inherit; backdrop-filter: blur(5px);
-            pointer-events: auto;
+            pointer-events: auto; animation: slideInRight 0.5s ease;
         }
 
         @media (max-width: 800px) {
             #ui-layer { flex-direction: column; }
-            #left-panel { flex: 0 0 auto; padding: 20px; max-height: 40vh; }
-            #right-panel { width: 100%; flex: 1; border-left: none; border-top: 1px solid #440000; }
+            #left-panel { flex: 0 0 auto; padding: 20px; max-height: 40vh; animation: none; }
+            #right-panel { width: 100%; flex: 1; border-left: none; border-top: 1px solid #440000; animation: none; }
             .gui-controls { margin-top: 10px; gap: 10px; }
             .btn-row { justify-content: space-between; gap: 8px; }
             button { padding: 10px; font-size: 8px; max-width: none; }
@@ -174,12 +237,14 @@
             background: rgba(0, 0, 0, 0.85);
             display: none; align-items: center; justify-content: center;
             z-index: 2000; pointer-events: auto;
+            backdrop-filter: blur(2px);
         }
         .modal-window {
             width: min(500px, 90vw); max-height: 80vh;
             background: #0a0000; border: 2px solid #660000;
             box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
             display: flex; flex-direction: column;
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -188,17 +253,18 @@
         }
         .modal-close {
             background: none; border: none; color: #ff3333;
-            font-family: inherit; cursor: pointer; font-size: 10px;
+            font-family: inherit; cursor: pointer; font-size: 10px; transition: transform 0.2s;
         }
+        .modal-close:hover { transform: rotate(90deg) scale(1.2); color: #fff; }
+
         .modal-content {
             padding: 15px; overflow-y: auto;
             font-size: 8px; line-height: 1.6; color: #ff8888;
         }
         
-        /* Updated Save Options Styles */
         .save-options { 
             display: flex; 
-            flex-direction: column; /* Enforced vertical stacking */
+            flex-direction: column; 
             gap: 10px; 
             width: 100%;
         }
@@ -206,14 +272,13 @@
             padding: 15px; text-align: left;
             background: #110000; border: 1px solid #440000;
             color: #ff8888; transition: all 0.2s;
-            width: 100%; /* Ensure full width */
-            max-width: none; /* Remove button max-width restriction for these specific buttons */
+            width: 100%; 
+            max-width: none; 
             display: block;
         }
-        .save-btn:hover { background: #330000; border-color: red; color: white; }
+        .save-btn:hover { background: #330000; border-color: red; color: white; transform: translateX(5px); }
         .save-desc { font-size: 6px; color: #884444; margin-top: 4px; }
 
-        /* Rendering Progress Bar Styles */
         #render-progress-container {
             display: none; 
             width: 100%;
@@ -247,6 +312,7 @@
     </style>
 </head>
 <body>
+    <div class="scanlines"></div>
     <canvas id="visCanvas"></canvas>
     <button id="exit-zen-btn" onclick="toggleZen()">Exit clear mode</button>
 
@@ -254,11 +320,12 @@
         <div id="left-panel">
             <h1 id="track-title">Nellix's Milkplayer</h1>
             
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                 <div class="stat-text" id="time-display">00:00 / 00:00</div>
                 <div class="stat-text" id="bpm-display">BPM: ---</div>
             </div>
             
+            <div class="stat-text" id="live-users-display">ONLINE: ...</div>
             <div class="sub-stat" id="total-stats">Session: 00:00:00</div>
             
             <div id="progress-container" onclick="seekAudio(event)">
@@ -303,7 +370,7 @@
             <div id="tab-vis" class="tab-content">
                 <div class="fx-group">
                     <div class="fx-title">MODE</div>
-                    <select id="vis-mode" style="width: 100%; background: #110000; color: red; border: 1px solid #440000; padding: 5px; font-family: inherit;">
+                    <select id="vis-mode" style="width: 100%; background: #110000; color: red; border: 1px solid #440000; padding: 5px; font-family: inherit;" onchange="saveUserSettings()">
                         <option value="Waveform">Waveform (32-bit)</option>
                         <option value="Linear Bars">Linear Bars</option>
                         <option value="Circular Wave">Circular Wave</option>
@@ -311,8 +378,8 @@
                 </div>
                 <div class="fx-group">
                     <div class="fx-title">ELEMENTS</div>
-                    <label><input type="checkbox" id="chk-particles" checked> Show Particles</label><br>
-                    <label><input type="checkbox" id="chk-mouse" checked> Mouse Trail</label><br>
+                    <label><input type="checkbox" id="chk-particles" checked onchange="saveUserSettings()"> Show Particles</label><br>
+                    <label><input type="checkbox" id="chk-mouse" checked onchange="saveUserSettings()"> Mouse Trail</label><br>
                 </div>
             </div>
         </div>
@@ -385,8 +452,95 @@
         let sessionStart = Date.now();
         let lastBeat = 0;
 
+        function saveUserSettings() {
+            const settings = {
+                volume: document.getElementById('vol-slider').value,
+                rate: document.getElementById('rate-slider').value,
+                visMode: document.getElementById('vis-mode').value,
+                showParticles: document.getElementById('chk-particles').checked,
+                mouseTrail: document.getElementById('chk-mouse').checked,
+                fx: {
+                    echo: document.querySelector('#tab-fx .fx-group:nth-child(1) input') ? document.querySelector('#tab-fx .fx-group:nth-child(1) input').value : 0,
+                    reverb: document.querySelector('#tab-fx .fx-group:nth-child(2) input') ? document.querySelector('#tab-fx .fx-group:nth-child(2) input').value : 0,
+                    dist: document.querySelector('#tab-fx .fx-group:nth-child(3) input') ? document.querySelector('#tab-fx .fx-group:nth-child(3) input').value : 0,
+                    lp: document.querySelector('#tab-fx .fx-group:nth-child(4) input') ? document.querySelector('#tab-fx .fx-group:nth-child(4) input').value : 0,
+                    trem: document.querySelector('#tab-fx .fx-group:nth-child(5) input') ? document.querySelector('#tab-fx .fx-group:nth-child(5) input').value : 0
+                }
+            };
+            localStorage.setItem('milkplayer_settings', JSON.stringify(settings));
+        }
+
+        function loadUserSettings() {
+            const saved = localStorage.getItem('milkplayer_settings');
+            if (!saved) return;
+            try {
+                const s = JSON.parse(saved);
+                if(s.volume) { document.getElementById('vol-slider').value = s.volume; updateVol(s.volume); }
+                if(s.rate) { document.getElementById('rate-slider').value = s.rate; updateSpeed(s.rate); }
+                if(s.visMode) document.getElementById('vis-mode').value = s.visMode;
+                if(s.showParticles !== undefined) document.getElementById('chk-particles').checked = s.showParticles;
+                if(s.mouseTrail !== undefined) document.getElementById('chk-mouse').checked = s.mouseTrail;
+                
+                const fxInputs = document.querySelectorAll('#tab-fx input[type=range]');
+                if(fxInputs.length >= 5 && s.fx) {
+                    if(s.fx.echo) { fxInputs[0].value = s.fx.echo; setFX('echo', s.fx.echo); }
+                    if(s.fx.reverb) { fxInputs[1].value = s.fx.reverb; setFX('reverb', s.fx.reverb); }
+                    if(s.fx.dist) { fxInputs[2].value = s.fx.dist; setFX('dist', s.fx.dist); }
+                    if(s.fx.lp) { fxInputs[3].value = s.fx.lp; setFX('lp', s.fx.lp); }
+                    if(s.fx.trem) { fxInputs[4].value = s.fx.trem; setFX('trem', s.fx.trem); }
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function trackEvent(eventName, params) {
+            if (typeof gtag !== 'undefined') {
+                gtag('event', eventName, params);
+            }
+        }
+
+        function initLiveCounter() {
+            const firebaseConfig = {
+                apiKey: "YOUR_API_KEY_HERE",
+                authDomain: "YOUR_PROJECT.firebaseapp.com",
+                databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_PROJECT.appspot.com",
+                messagingSenderId: "12345",
+                appId: "1:12345:web:12345"
+            };
+
+            if (firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
+                document.getElementById('live-users-display').innerText = "ONLINE: OFFLINE";
+                return;
+            }
+
+            try {
+                firebase.initializeApp(firebaseConfig);
+                const db = firebase.database();
+                const presenceRef = db.ref('connections');
+                const connectedRef = db.ref('.info/connected');
+                const myCon = presenceRef.push();
+
+                connectedRef.on('value', (snap) => {
+                    if (snap.val() === true) {
+                        myCon.onDisconnect().remove();
+                        myCon.set(true);
+                    }
+                });
+
+                presenceRef.on('value', (snap) => {
+                    const count = snap.numChildren();
+                    document.getElementById('live-users-display').innerText = `ONLINE: ${count}`;
+                });
+            } catch(e) {
+                console.log(e);
+            }
+        }
+
         function toggleZen() {
             document.body.classList.toggle('clear-mode');
+            const isZen = document.body.classList.contains('clear-mode');
+            trackEvent('toggle_zen', { 'state': isZen ? 'on' : 'off' });
         }
         
         document.addEventListener('keydown', (e) => {
@@ -514,6 +668,12 @@
             sourceNode.start(0, songStartOffset);
             isPlaying = true;
             document.getElementById('btn-play').innerText = "PAUSE";
+            
+            trackEvent('audio_start', {
+                'track_name': document.getElementById('track-title').innerText,
+                'duration': audioBuffer.duration
+            });
+
             sourceNode.onended = () => {
                 playNext();
             };
@@ -559,12 +719,14 @@
             playbackRate = newRate;
             document.getElementById('lbl-rate').innerText = `RATE: ${playbackRate.toFixed(2)}x`;
             if (sourceNode) sourceNode.playbackRate.value = playbackRate;
+            saveUserSettings();
         }
 
         function updateVol(val) {
             volume = val / 100;
             document.getElementById('lbl-vol').innerText = `VOL: ${val}%`;
             if (gainMaster) gainMaster.gain.value = volume;
+            saveUserSettings();
         }
 
         function playNext() {
@@ -616,6 +778,8 @@
             const progBar = document.getElementById('render-progress-bar');
             const statusTxt = document.getElementById('render-status-text');
             const promptTxt = document.getElementById('save-prompt-text');
+
+            trackEvent('audio_export_start', { 'format': format });
 
             saveOpts.style.display = 'none';
             progCont.style.display = 'block';
@@ -711,6 +875,8 @@
                 a.click();
                 document.body.removeChild(a);
                 
+                trackEvent('audio_export_complete', { 'format': format });
+
                 setTimeout(() => {
                     closeModal('save');
                 }, 1000);
@@ -768,7 +934,7 @@
             div.innerHTML = `
                 <div class="fx-title">${fx.name}</div>
                 <div class="fx-control">
-                    <input type="range" min="0" max="100" value="${fx.def}" oninput="setFX('${fx.id}', this.value)">
+                    <input type="range" min="0" max="100" value="${fx.def}" oninput="setFX('${fx.id}', this.value)" onchange="saveUserSettings()">
                     <div class="fx-val" id="val-${fx.id}">${fx.def}%</div>
                 </div>`;
             fxCont.appendChild(div);
@@ -976,7 +1142,7 @@
                 audio.playbackRate = speed;
                 if (audio.preservesPitch !== undefined) audio.preservesPitch = false; 
                 else if (audio.mozPreservesPitch !== undefined) audio.mozPreservesPitch = false;
-                audio.play().catch(e => console.log("Audio play failed/blocked", e));
+                audio.play().catch(e => console.log(e));
             });
 
             container.appendChild(img);
@@ -984,6 +1150,11 @@
         }
 
         initMascot();
+        
+        window.onload = function() {
+            loadUserSettings();
+            initLiveCounter();
+        };
 
     </script>
 </body>
