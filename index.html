@@ -187,14 +187,55 @@
             font-size: 8px; line-height: 1.6; color: #ff8888;
         }
         
-        .save-options { display: flex; flex-direction: column; gap: 10px; }
+        /* Updated Save Options Styles */
+        .save-options { 
+            display: flex; 
+            flex-direction: column; /* Enforced vertical stacking */
+            gap: 10px; 
+            width: 100%;
+        }
         .save-btn {
             padding: 15px; text-align: left;
             background: #110000; border: 1px solid #440000;
             color: #ff8888; transition: all 0.2s;
+            width: 100%; /* Ensure full width */
+            max-width: none; /* Remove button max-width restriction for these specific buttons */
+            display: block;
         }
         .save-btn:hover { background: #330000; border-color: red; color: white; }
         .save-desc { font-size: 6px; color: #884444; margin-top: 4px; }
+
+        /* Rendering Progress Bar Styles */
+        #render-progress-container {
+            display: none; 
+            width: 100%;
+            margin-top: 15px;
+            background: #110000;
+            border: 2px solid #440000;
+            height: 20px;
+            position: relative;
+        }
+        #render-progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #ff0000;
+            transition: width 0.2s ease-out;
+            box-shadow: 0 0 10px #ff0000;
+        }
+        #render-status-text {
+            display: none;
+            color: #ff8888;
+            font-size: 8px;
+            margin-top: 10px;
+            text-align: center;
+            width: 100%;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
     </style>
 </head>
 <body>
@@ -292,7 +333,7 @@
                 <button class="modal-close" onclick="closeModal('save')">X</button>
             </div>
             <div class="modal-content">
-                <p style="margin-bottom: 15px; color: #ffaaaa;">I have several formats for you</p>
+                <p style="margin-bottom: 15px; color: #ffaaaa;" id="save-prompt-text">I have several formats for you</p>
                 <div class="save-options">
                     <button class="save-btn" onclick="instantSave('wav')">
                         WAV (which is basically lossless)
@@ -307,6 +348,11 @@
                         <div class="save-desc">Opensourced audio convert format, may be used ingames and etc.</div>
                     </button>
                 </div>
+
+                <div id="render-progress-container">
+                    <div id="render-progress-bar"></div>
+                </div>
+                <div id="render-status-text">RENDERING AUDIO...</div>
             </div>
         </div>
     </div>
@@ -342,6 +388,13 @@
 
         function openModal(id) {
             document.getElementById(id + '-overlay').style.display = 'flex';
+            if(id === 'save') {
+                document.querySelector('.save-options').style.display = 'flex';
+                document.getElementById('render-progress-container').style.display = 'none';
+                document.getElementById('render-status-text').style.display = 'none';
+                document.getElementById('save-prompt-text').innerText = "I have several formats for you";
+                document.getElementById('render-progress-bar').style.width = '0%';
+            }
         }
         function closeModal(id) {
             document.getElementById(id + '-overlay').style.display = 'none';
@@ -548,13 +601,26 @@
         }
 
         async function instantSave(format) {
-            if (!audioBuffer) { alert("No music loaded!"); return; }
-            closeModal('save'); 
+            if (!audioBuffer) { alert("You loaded no music bro"); return; }
+            
+            const saveOpts = document.querySelector('.save-options');
+            const progCont = document.getElementById('render-progress-container');
+            const progBar = document.getElementById('render-progress-bar');
+            const statusTxt = document.getElementById('render-status-text');
+            const promptTxt = document.getElementById('save-prompt-text');
 
-            const saveBtn = document.querySelector('button[onclick="openModal(\'save\')"]');
-            const oldText = saveBtn.innerText;
-            saveBtn.innerText = "RENDERING...";
-            saveBtn.disabled = true;
+            saveOpts.style.display = 'none';
+            progCont.style.display = 'block';
+            statusTxt.style.display = 'block';
+            promptTxt.innerText = "Applying effects, please wait";
+            
+            let fakeProgress = 0;
+            const progInterval = setInterval(() => {
+                fakeProgress += (95 - fakeProgress) * 0.05;
+                progBar.style.width = fakeProgress + "%";
+            }, 100);
+
+            await new Promise(r => setTimeout(r, 100));
 
             const sampleRate = audioCtx.sampleRate;
             const originalDuration = audioBuffer.duration;
@@ -618,6 +684,11 @@
             
             try {
                 const renderedBuffer = await offlineCtx.startRendering();
+                
+                clearInterval(progInterval);
+                progBar.style.width = "100%";
+                statusTxt.innerText = "Almost there";
+
                 const blob = bufferToWave(renderedBuffer, renderedBuffer.length);
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -632,17 +703,16 @@
                 a.click();
                 document.body.removeChild(a);
                 
-                if (format !== 'wav') {
-                    console.log("Saved as PCM with " + ext + " extension.");
-                }
+                setTimeout(() => {
+                    closeModal('save');
+                }, 1000);
 
             } catch(e) {
+                clearInterval(progInterval);
                 console.error(e);
                 alert("Rendering failed");
+                closeModal('save');
             }
-
-            saveBtn.innerText = oldText;
-            saveBtn.disabled = false;
         }
 
         document.body.addEventListener('dragover', e => e.preventDefault());
