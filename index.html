@@ -499,7 +499,13 @@
         }
 
         function initLiveCounter() {
-            const firebaseConfig = {
+            // avoid running twice
+            if (window._milkplayer_livecounter_initialized) return;
+            window._milkplayer_livecounter_initialized = true;
+
+            // <script>window.FIREBASE_CONFIG = { apiKey: "...", authDomain: "...", databaseURL: "https://..."};</script>
+            // If not provided fall back to the inline placeholder (so we can detect it's not configured)
+            const inlineConfig = {
                 apiKey: "YOUR_API_KEY_HERE",
                 authDomain: "YOUR_PROJECT.firebaseapp.com",
                 databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
@@ -509,13 +515,21 @@
                 appId: "1:12345:web:12345"
             };
 
-            if (firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
-                document.getElementById('live-users-display').innerText = "ONLINE: OFFLINE";
+            const firebaseConfig = window.FIREBASE_CONFIG || inlineConfig;
+
+            // If the config is still placeholder-ish, don't try to connect; show an informative message.
+            if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
+                const el = document.getElementById('live-users-display');
+                if (el) el.innerText = "ONLINE: OFFLINE (no firebase configured)";
+                console.warn('Milkplayer: Firebase realtime presence disabled — supply a valid config via window.FIREBASE_CONFIG or update initLiveCounter()');
                 return;
             }
 
             try {
-                firebase.initializeApp(firebaseConfig);
+                // initialize firebase only once
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                }
                 const db = firebase.database();
                 const presenceRef = db.ref('connections');
                 const connectedRef = db.ref('.info/connected');
@@ -523,6 +537,7 @@
 
                 connectedRef.on('value', (snap) => {
                     if (snap.val() === true) {
+                        // ensure we remove our entry when disconnected
                         myCon.onDisconnect().remove();
                         myCon.set(true);
                     }
@@ -530,10 +545,13 @@
 
                 presenceRef.on('value', (snap) => {
                     const count = snap.numChildren();
-                    document.getElementById('live-users-display').innerText = `ONLINE: ${count}`;
+                    const el = document.getElementById('live-users-display');
+                    if (el) el.innerText = `ONLINE: ${count}`;
                 });
-            } catch(e) {
-                console.log(e);
+            } catch (e) {
+                console.error('Milkplayer: Failed to initialize firebase presence', e);
+                const el = document.getElementById('live-users-display');
+                if (el) el.innerText = "ONLINE: OFFLINE (error)";
             }
         }
 
@@ -1151,10 +1169,11 @@
 
         initMascot();
         
-        window.onload = function() {
-            loadUserSettings();
-            initLiveCounter();
-        };
+        // ensure settings are loaded and live counter starts after the page has loaded
+        window.addEventListener('load', () => {
+            try { loadUserSettings(); } catch (e) { console.warn('loadUserSettings failed', e); }
+            try { initLiveCounter(); } catch (e) { console.warn('initLiveCounter failed', e); }
+        });
 
     </script>
 </body>
