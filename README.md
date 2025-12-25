@@ -17,3 +17,8 @@ Your session time
 BPM
 Ability to save your song for absolutely free
 And sound effects!
+
+# What's the site
+
+You may find or try the project out on
+https://shanewixx.github.io/milkplayer/
