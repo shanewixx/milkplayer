@@ -34,7 +34,7 @@
             min-width: 0;
         }
         h1 {
-            font-size: clamp(14px, 3vw, 24px); /* Adjusted for pixel font size */
+            font-size: clamp(14px, 3vw, 24px); 
             color: #ff3333; text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
             letter-spacing: 2px; margin: 0 0 10px 0; 
             overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
@@ -76,6 +76,7 @@
         }
         button:hover { background: #440000; color: white; border-color: #ff3333; }
         button:active { transform: translateY(2px); border-bottom: 1px solid #660000; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(100%); }
         
         .slider-row { display: flex; gap: 20px; flex-wrap: wrap; }
         .slider-group { display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 120px;}
@@ -120,25 +121,16 @@
         .fx-val { width: 45px; text-align: right; color: #ff8888; font-size: 8px; }
         
         #mascot-container {
-            margin-top: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            margin-top: 20px; width: 100%;
+            display: flex; justify-content: center; align-items: center;
             padding-bottom: 20px;
         }
-
         #mascot-img {
-            width: 200px; 
-            height: 200px;
-            object-fit: contain;
-            image-rendering: pixelated;
-            cursor: pointer;
-            border: 2px solid #440000;
-            background: #000;
+            width: 200px; height: 200px; object-fit: contain;
+            image-rendering: pixelated; cursor: pointer;
+            border: 2px solid #440000; background: #000;
             transition: transform 0.1s, border-color 0.2s;
         }
-
         #mascot-img:hover { border-color: #ff3333; }
         #mascot-img:active { transform: scale(0.95); border-color: #ffffff; }
 
@@ -157,9 +149,7 @@
         @media (max-width: 800px) {
             #ui-layer { flex-direction: column; }
             #left-panel { flex: 0 0 auto; padding: 20px; max-height: 40vh; }
-            #right-panel { 
-                width: 100%; flex: 1; border-left: none; border-top: 1px solid #440000;
-            }
+            #right-panel { width: 100%; flex: 1; border-left: none; border-top: 1px solid #440000; }
             .gui-controls { margin-top: 10px; gap: 10px; }
             .btn-row { justify-content: space-between; gap: 8px; }
             button { padding: 10px; font-size: 8px; max-width: none; }
@@ -171,64 +161,44 @@
         body.clear-mode #time-display { opacity: 0; }
         body.clear-mode #exit-zen-btn { display: block; }
         
-        /* INFO Modal Styles */
-        #info-overlay {
-            position: fixed;
-            inset: 0;
+        .modal-overlay {
+            position: fixed; inset: 0;
             background: rgba(0, 0, 0, 0.85);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            pointer-events: auto;
+            display: none; align-items: center; justify-content: center;
+            z-index: 2000; pointer-events: auto;
         }
-
-        #info-window {
-            width: min(500px, 90vw);
-            max-height: 80vh;
-            background: #0a0000;
-            border: 2px solid #660000;
+        .modal-window {
+            width: min(500px, 90vw); max-height: 80vh;
+            background: #0a0000; border: 2px solid #660000;
             box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
         }
-
-        #info-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background: #1a0000;
-            border-bottom: 1px solid #440000;
-            color: #ff3333;
-            font-size: 9px;
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; background: #1a0000; border-bottom: 1px solid #440000;
+            color: #ff3333; font-size: 9px;
         }
-
-        #info-close {
-            background: none;
-            border: none;
-            color: #ff3333;
-            font-family: inherit;
-            cursor: pointer;
-            font-size: 10px;
+        .modal-close {
+            background: none; border: none; color: #ff3333;
+            font-family: inherit; cursor: pointer; font-size: 10px;
         }
-
-        #info-close:hover {
-            color: white;
+        .modal-content {
+            padding: 15px; overflow-y: auto;
+            font-size: 8px; line-height: 1.6; color: #ff8888;
         }
-
-        #info-content {
-            padding: 15px;
-            overflow-y: auto;
-            font-size: 8px;
-            line-height: 1.6;
-            color: #ff8888;
+        
+        .save-options { display: flex; flex-direction: column; gap: 10px; }
+        .save-btn {
+            padding: 15px; text-align: left;
+            background: #110000; border: 1px solid #440000;
+            color: #ff8888; transition: all 0.2s;
         }
+        .save-btn:hover { background: #330000; border-color: red; color: white; }
+        .save-desc { font-size: 6px; color: #884444; margin-top: 4px; }
     </style>
 </head>
 <body>
     <canvas id="visCanvas"></canvas>
-    
     <button id="exit-zen-btn" onclick="toggleZen()">Exit clear mode</button>
 
     <div id="ui-layer">
@@ -248,14 +218,14 @@
 
             <div class="gui-controls">
                 <div class="btn-row">
-                    <button onclick="playPrev()">&lt;&lt;</button>
+                    <button onclick="playPrev()"><<</button>
                     <button id="btn-play" onclick="togglePlay()">PLAY</button>
-                    <button onclick="playNext()">&gt;&gt;</button>
+                    <button onclick="playNext()">>></button>
                     <button onclick="toggleZen()">CM</button>
-                    <button onclick="openInfo()">:3с</button>
+                    <button onclick="openModal('info')">:3с</button>
                     <input type="file" id="file-input" accept="audio/*" multiple>
                     <button onclick="document.getElementById('file-input').click()">LOAD</button>
-                    <button onclick="saveCheck()">SAVE</button>
+                    <button onclick="openModal('save')">SAVE</button>
                 </div>
                 <div class="slider-row">
                     <div class="slider-group">
@@ -280,8 +250,7 @@
                 <input type="text" id="search-bar" placeholder="SEARCH..." onkeyup="filterPlaylist()">
                 <ul id="playlist-list"></ul>
             </div>
-            <div id="tab-fx" class="tab-content active">
-                </div>
+            <div id="tab-fx" class="tab-content active"></div>
             <div id="tab-vis" class="tab-content">
                 <div class="fx-group">
                     <div class="fx-title">MODE</div>
@@ -300,21 +269,44 @@
         </div>
     </div>
 
-    <div id="info-overlay" onclick="closeInfo()">
-        <div id="info-window" onclick="event.stopPropagation()">
-            <div id="info-header">
+    <div id="info-overlay" class="modal-overlay" onclick="closeModal('info')">
+        <div class="modal-window" onclick="event.stopPropagation()">
+            <div class="modal-header">
                 <span>Nellix's Milkplayer</span>
-                <button id="info-close" onclick="closeInfo()">:3</button>
+                <button class="modal-close" onclick="closeModal('info')">:3</button>
             </div>
-
-            <div id="info-content">
+            <div class="modal-content">
                 <p>Thank you for using this app! I hope i didnt overcomplicate it at all and you enjoy spending time here</p>
                 <p>This project will keep being opensourced, so anyone could make anything they want with it. Im just tired of the greedy developers blocking half of the features under a paywall. Have fun please!</p>
 				<p>The site is being hosted and its files located at github https://github.com/shanewixx/milkplayer</p>
 				<p></p>
-				<p></p>
-				<p>My socials as listed: Discord - c6d31, Telegram - @nellix47, Spotify - c6d3 (Please check out my works!!)</p>
-				<p>https://open.spotify.com/artist/3X4E58GMS8hQJtBJOydFMe</p>
+				<p>My socials as listed: Discord - c6d31, Telegram - @nellix47, Spotify - c6d3</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-overlay" class="modal-overlay" onclick="closeModal('save')">
+        <div class="modal-window" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span>Save your edited audio</span>
+                <button class="modal-close" onclick="closeModal('save')">X</button>
+            </div>
+            <div class="modal-content">
+                <p style="margin-bottom: 15px; color: #ffaaaa;">I have several formats for you</p>
+                <div class="save-options">
+                    <button class="save-btn" onclick="instantSave('wav')">
+                        WAV (which is basically lossless)
+                        <div class="save-desc">Best quality, but it may be uncomfortable to use (by that i mean compatibility)</div>
+                    </button>
+                    <button class="save-btn" onclick="instantSave('mp3')">
+                        MP3
+                        <div class="save-desc">A format that everyone r using and basically supported by all players.</div>
+                    </button>
+                    <button class="save-btn" onclick="instantSave('ogg')">
+                        OGG
+                        <div class="save-desc">Opensourced audio convert format, may be used ingames and etc.</div>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -344,24 +336,16 @@
         }
         
         document.addEventListener('keydown', (e) => {
-            if (e.key === "Control") {
-                toggleZen();
-            }
+            if (e.key === "Control") toggleZen();
+            if (e.key === "Escape") { closeModal('info'); closeModal('save'); }
         });
 
-        function openInfo() {
-            document.getElementById('info-overlay').style.display = 'flex';
+        function openModal(id) {
+            document.getElementById(id + '-overlay').style.display = 'flex';
         }
-
-        function closeInfo() {
-            document.getElementById('info-overlay').style.display = 'none';
+        function closeModal(id) {
+            document.getElementById(id + '-overlay').style.display = 'none';
         }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === "Escape" && document.getElementById('info-overlay').style.display === 'flex') {
-                closeInfo();
-            }
-        });
 
         function initAudio() {
             if (audioCtx) return;
@@ -532,22 +516,135 @@
             let prev = (currentTrackIndex - 1 + playlist.length) % playlist.length;
             loadTrack(prev);
         }
-       async function saveCheck() {
-    if (!window.milk) {
-        alert("Saving is only available in desktop mode.");
-        return;
-    }
 
-    const data = {
-        playlist: playlist.map(f => f.name),
-        currentTrackIndex,
-        playbackRate,
-        volume
-    };
+        function bufferToWave(abuffer, len) {
+            let numOfChan = abuffer.numberOfChannels,
+                length = len * numOfChan * 2 + 44,
+                buffer = new ArrayBuffer(length),
+                view = new DataView(buffer),
+                channels = [], i, sample, offset = 0, pos = 0;
 
-    const ok = await window.milk.saveFile(data);
-    if (ok) alert("Saved successfully.");
-}
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+            setUint32(0x20746d66); setUint32(16); setUint16(1);
+            setUint16(numOfChan); setUint32(abuffer.sampleRate);
+            setUint32(abuffer.sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164);
+            setUint32(length - pos - 4);
+
+            for(i = 0; i < abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
+
+            while(pos < len) {
+                for(i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][pos])); 
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0; 
+                    view.setInt16(44 + offset, sample, true);
+                    offset += 2;
+                }
+                pos++;
+            }
+            return new Blob([buffer], {type: "audio/wav"});
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+        }
+
+        async function instantSave(format) {
+            if (!audioBuffer) { alert("No music loaded!"); return; }
+            closeModal('save'); 
+
+            const saveBtn = document.querySelector('button[onclick="openModal(\'save\')"]');
+            const oldText = saveBtn.innerText;
+            saveBtn.innerText = "RENDERING...";
+            saveBtn.disabled = true;
+
+            const sampleRate = audioCtx.sampleRate;
+            const originalDuration = audioBuffer.duration;
+            const renderRate = playbackRate; 
+            const renderDuration = originalDuration / renderRate;
+            
+            const offlineCtx = new OfflineAudioContext(2, renderDuration * sampleRate, sampleRate);
+
+            const source = offlineCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.playbackRate.value = renderRate;
+
+            const dist = offlineCtx.createWaveShaper();
+            const distVal = document.querySelector('#tab-fx .fx-group:nth-child(3) input').value;
+            dist.curve = makeDistortionCurve(distVal * 4);
+            dist.oversample = '4x';
+
+            const lp = offlineCtx.createBiquadFilter();
+            lp.type = "lowpass";
+            const lpVal = document.querySelector('#tab-fx .fx-group:nth-child(4) input').value / 100;
+            const lpFreq = lpVal === 0 ? 22000 : 22000 * Math.pow(0.02, lpVal);
+            lp.frequency.value = lpFreq;
+
+            const tremGain = offlineCtx.createGain();
+            const tremOsc = offlineCtx.createOscillator();
+            tremOsc.frequency.value = 4;
+            const lfoAmp = offlineCtx.createGain();
+            const tremVal = document.querySelector('#tab-fx .fx-group:nth-child(5) input').value / 100;
+            lfoAmp.gain.value = tremVal;
+            tremOsc.connect(lfoAmp).connect(tremGain.gain);
+            tremOsc.start();
+
+            const delay = offlineCtx.createDelay(5.0);
+            delay.delayTime.value = 0.4;
+            const delayFB = offlineCtx.createGain();
+            delayFB.gain.value = 0.4;
+            const delayWet = offlineCtx.createGain();
+            const delayVal = document.querySelector('#tab-fx .fx-group:nth-child(1) input').value / 100;
+            delayWet.gain.value = delayVal;
+            delay.connect(delayFB).connect(delay);
+
+            const rev = offlineCtx.createConvolver();
+            if (revNode && revNode.buffer) {
+                rev.buffer = revNode.buffer;
+            } else {
+                rev.buffer = createImpulse(2.0); 
+            }
+            const revWet = offlineCtx.createGain();
+            const revVal = document.querySelector('#tab-fx .fx-group:nth-child(2) input').value / 100;
+            revWet.gain.value = revVal;
+
+            const master = offlineCtx.createGain();
+            master.gain.value = volume;
+
+            source.connect(dist).connect(lp).connect(tremGain).connect(master);
+            source.connect(delay).connect(delayWet).connect(master);
+            source.connect(rev).connect(revWet).connect(master);
+
+            master.connect(offlineCtx.destination);
+            source.start(0);
+            
+            try {
+                const renderedBuffer = await offlineCtx.startRendering();
+                const blob = bufferToWave(renderedBuffer, renderedBuffer.length);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                let ext = "wav";
+                if(format === 'mp3') ext = "mp3";
+                if(format === 'ogg') ext = "ogg";
+                
+                a.download = `rendered_track_${Date.now()}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                if (format !== 'wav') {
+                    console.log("Saved as PCM with " + ext + " extension.");
+                }
+
+            } catch(e) {
+                console.error(e);
+                alert("Rendering failed");
+            }
+
+            saveBtn.innerText = oldText;
+            saveBtn.disabled = false;
+        }
+
         document.body.addEventListener('dragover', e => e.preventDefault());
         document.body.addEventListener('drop', e => {
             e.preventDefault();
