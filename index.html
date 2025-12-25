@@ -499,34 +499,20 @@
         }
 
         function initLiveCounter() {
-            // avoid running twice
             if (window._milkplayer_livecounter_initialized) return;
             window._milkplayer_livecounter_initialized = true;
 
-            // <script>window.FIREBASE_CONFIG = { apiKey: "...", authDomain: "...", databaseURL: "https://..."};</script>
-            // If not provided fall back to the inline placeholder (so we can detect it's not configured)
-            const inlineConfig = {
-                apiKey: "YOUR_API_KEY_HERE",
-                authDomain: "YOUR_PROJECT.firebaseapp.com",
-                databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-                projectId: "YOUR_PROJECT_ID",
-                storageBucket: "YOUR_PROJECT.appspot.com",
-                messagingSenderId: "12345",
-                appId: "1:12345:web:12345"
+            const firebaseConfig = {
+                apiKey: "AIzaSyDI7hLOPe1H-XIRfk7vDzoNbnE7zZxk7IQ",
+                authDomain: "milkplayer-5ce5e.firebaseapp.com",
+                databaseURL: "https://milkplayer-5ce5e-default-rtdb.firebaseio.com",
+                projectId: "milkplayer-5ce5e",
+                storageBucket: "milkplayer-5ce5e.firebasestorage.app",
+                messagingSenderId: "765396954514",
+                appId: "1:765396954514:web:3e8d17c1f0ce1d5119e54b"
             };
 
-            const firebaseConfig = window.FIREBASE_CONFIG || inlineConfig;
-
-            // If the config is still placeholder-ish, don't try to connect; show an informative message.
-            if (!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
-                const el = document.getElementById('live-users-display');
-                if (el) el.innerText = "ONLINE: OFFLINE (no firebase configured)";
-                console.warn('Milkplayer: Firebase realtime presence disabled — supply a valid config via window.FIREBASE_CONFIG or update initLiveCounter()');
-                return;
-            }
-
             try {
-                // initialize firebase only once
                 if (!firebase.apps || firebase.apps.length === 0) {
                     firebase.initializeApp(firebaseConfig);
                 }
@@ -537,7 +523,6 @@
 
                 connectedRef.on('value', (snap) => {
                     if (snap.val() === true) {
-                        // ensure we remove our entry when disconnected
                         myCon.onDisconnect().remove();
                         myCon.set(true);
                     }
@@ -549,9 +534,9 @@
                     if (el) el.innerText = `ONLINE: ${count}`;
                 });
             } catch (e) {
-                console.error('Milkplayer: Failed to initialize firebase presence', e);
+                console.error('Milkplayer: Firebase Error', e);
                 const el = document.getElementById('live-users-display');
-                if (el) el.innerText = "ONLINE: OFFLINE (error)";
+                if (el) el.innerText = "ONLINE: OFFLINE";
             }
         }
 
@@ -1169,7 +1154,6 @@
 
         initMascot();
         
-        // ensure settings are loaded and live counter starts after the page has loaded
         window.addEventListener('load', () => {
             try { loadUserSettings(); } catch (e) { console.warn('loadUserSettings failed', e); }
             try { initLiveCounter(); } catch (e) { console.warn('initLiveCounter failed', e); }
