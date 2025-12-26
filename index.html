@@ -393,7 +393,7 @@
                 <div class="fx-group">
                     <div class="fx-title">Effects</div>
                     <select id="vis-mode" style="width: 100%; background: #110000; color: red; border: 1px solid #440000; padding: 5px; font-family: inherit;" onchange="saveUserSettings()">
-                        <option value="Waveform">Waveform)</option>
+                        <option value="Waveform">Waveform</option>
                         <option value="Linear Bars">Bars thingy</option>
                         <option value="Circular Wave">Circle wave (lol??)</option>
                     </select>
@@ -566,7 +566,7 @@
                 presenceRef.on('value', (snap) => {
                     const count = snap.numChildren();
                     const el = document.getElementById('live-users-display');
-                    if (el) el.innerText = `ONLINE: ${count}`;
+                    if (el) el.innerText = `Drinking milk: ${count}`;
                 });
             } catch (e) {
                 console.error('Milkplayer: Firebase Error', e);
@@ -1139,7 +1139,7 @@
             const hh = Math.floor(diff/3600).toString().padStart(2,'0');
             const mm = Math.floor((diff%3600)/60).toString().padStart(2,'0');
             const ss = (diff%60).toString().padStart(2,'0');
-            document.getElementById('total-stats').innerText = `Session: ${hh}:${mm}:${ss}`;
+            document.getElementById('total-stats').innerText = `You were listening for: ${hh}:${mm}:${ss}`;
         }
 
         window.openTab = (name) => {
