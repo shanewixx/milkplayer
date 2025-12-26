@@ -231,10 +231,8 @@
             h1 { font-size: 14px; }
         }
 
-        /* Clean Mode Styles */
         body.clear-mode #right-panel { display: none !important; }
         
-        /* Hide controls, progress bar, online stats, and extra stats in clear mode */
         body.clear-mode .gui-controls,
         body.clear-mode #progress-container,
         body.clear-mode #live-users-display,
@@ -245,13 +243,11 @@
             transition: opacity 0.5s ease;
         }
 
-        /* Ensure Title and Time remain visible */
         body.clear-mode #time-display, 
         body.clear-mode h1 { 
             opacity: 1 !important; 
         }
 
-        /* Add a subtle cursor to indicate interaction is still possible */
         body.clear-mode {
             cursor: pointer;
         }
@@ -343,6 +339,10 @@
                     <button onclick="document.getElementById('file-input').click()">LOAD</button>
                     
                     <button onclick="openModal('save')">SAVE</button>
+                </div>
+                <div style="width: 100%; display: flex; gap: 5px; margin-top: 5px;">
+                    <input type="text" id="yt-input" placeholder="Paste YouTube Link..." style="flex: 1; background: #0a0000; border: 1px solid #660000; color: #ff0000; padding: 5px; font-family: inherit; font-size: 8px;">
+                    <button onclick="loadYoutube()" style="flex: 0 0 auto; width: auto;">YT LOAD</button>
                 </div>
                 <div class="slider-row">
                     <div class="slider-group">
@@ -591,18 +591,14 @@
         }
 
         function toggleZen(e) {
-            // Prevent the button click from immediately triggering the document click
             if(e) e.stopPropagation();
             document.body.classList.toggle('clear-mode');
         }
 
-        // Add a global listener to exit clear mode when clicking anywhere
         document.addEventListener('click', (e) => {
             if (document.body.classList.contains('clear-mode')) {
-                // Remove the class to exit clear mode
                 document.body.classList.remove('clear-mode');
                 
-                // Play sound effect (optional, uses your existing click sound)
                 if(typeof clickSound !== 'undefined') {
                     clickSound.currentTime = 0;
                     clickSound.play().catch(()=>{});
@@ -692,6 +688,69 @@
                 curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
             }
             return curve;
+        }
+
+        async function loadYoutube() {
+            const input = document.getElementById('yt-input');
+            const url = input.value.trim();
+            
+            let videoId = "";
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            if (match && match[2].length === 11) {
+                videoId = match[2];
+            } else {
+                alert("Invalid YouTube URL");
+                return;
+            }
+
+            document.getElementById('track-title').innerText = "FETCHING YOUTUBE DATA...";
+            document.getElementById('btn-play').innerText = "WAIT...";
+
+            try {
+                const apiUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                const audioStream = data.audioStreams.find(s => s.format === 'M4A') || data.audioStreams[0];
+                const videoStream = data.videoStreams.find(s => s.quality === '1080p' && !s.videoOnly) || data.videoStreams[0];
+
+                if (!audioStream) throw new Error("No audio stream found");
+
+                document.getElementById('track-title').innerText = "DOWNLOADING AUDIO...";
+                
+                const audioResp = await fetch(audioStream.url);
+                const arrayBuffer = await audioResp.arrayBuffer();
+
+                initAudio();
+                stopBgMusic();
+                
+                audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
+                    audioBuffer = buffer;
+                    document.getElementById('track-title').innerText = data.title.substring(0, 30).toUpperCase();
+                    songStartOffset = 0;
+                    
+                    if (videoStream) {
+                        const bgVid = document.getElementById('bg-video');
+                        bgVid.src = videoStream.url;
+                        bgVid.muted = true;
+                        bgVid.loop = true;
+                        bgVid.play().catch(e => console.log("BG Video error", e));
+                    }
+
+                    playAudio();
+                    input.value = "";
+                }, (e) => {
+                    alert("Error decoding audio: " + e.message);
+                    document.getElementById('track-title').innerText = "DECODE ERROR";
+                });
+
+            } catch (err) {
+                console.error(err);
+                alert("Failed to load YouTube video. The API might be busy or the video is restricted.");
+                document.getElementById('track-title').innerText = "ERROR LOADING YT";
+                document.getElementById('btn-play').innerText = "PLAY";
+            }
         }
 
         async function loadTrack(index) {
