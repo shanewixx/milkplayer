@@ -195,7 +195,6 @@
         #playlist-list li:hover { background: rgba(50, 0, 0, 0.5); padding-left: 18px; color: #ff5555; }
         #playlist-list li.active { background: rgba(255, 0, 0, 0.2); border-left: 3px solid red; color: #ff8888; padding-left: 15px; }
         
-        /* Delete Button */
         .delete-btn {
             color: #660000; font-weight: bold; padding: 2px 6px;
             border: 1px solid #440000; margin-left: 10px; transition: all 0.2s;
@@ -221,7 +220,6 @@
 
         canvas { position: absolute; top: 0; left: 0; z-index: 0; }
         #file-input { display: none; }
-        #bg-folder-input { display: none; } 
 
         #exit-zen-btn {
             position: fixed; top: 20px; right: 20px; z-index: 1000;
@@ -332,9 +330,6 @@
                     <input type="file" id="file-input" accept="audio/*" multiple>
                     <button onclick="document.getElementById('file-input').click()">LOAD</button>
                     
-                    <input type="file" id="bg-folder-input" webkitdirectory directory multiple>
-                    <button onclick="document.getElementById('bg-folder-input').click()" title="Load folder for background music">BG MUSIC</button>
-                    
                     <button onclick="openModal('save')">SAVE</button>
                 </div>
                 <div class="slider-row">
@@ -387,7 +382,7 @@
             </div>
             <div class="modal-content">
                 <p>Thank you for using this app! Updated with screensavers and cursors.</p>
-                <p>Background Music: Click "BG MUSIC" and select a folder of MP3s. They will play when the main player stops.</p>
+                <p>Background Music: Now plays automatically when you are idling or no music is selected.</p>
                 <p>The site is being hosted at github https://github.com/shanewixx/milkplayer</p>
 				<p>My socials: Discord - c6d31, Telegram - @nellix47</p>
             </div>
@@ -434,6 +429,15 @@
                 fxSound.play().catch(()=>{});
             }
         });
+        window.openTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const tabs = document.querySelectorAll('.tab');
+            if(tabName === 'playlist') tabs[0].classList.add('active');
+            else if(tabName === 'fx') tabs[1].classList.add('active');
+            else if(tabName === 'vis') tabs[2].classList.add('active');
+        };
 
         let idleTime = 0;
         const screensaverContainer = document.getElementById('screensaver-container');
@@ -460,27 +464,19 @@
         ['mousemove', 'mousedown', 'keydown', 'touchstart'].forEach(evt => 
             document.addEventListener(evt, resetIdleTimer)
         );
-
-        let bgMusicFiles = [];
+        const bgMusicFiles = [
+            'music/I_am_okay.mp3',
+            'music/petrol_stain_patterns.mp3',
+            'music/stopmotion_music.mp3'
+        ];
         let bgAudio = new Audio();
         let bgMusicPlaying = false;
         let bgFadeInterval;
 
-        document.getElementById('bg-folder-input').addEventListener('change', (e) => {
-            bgMusicFiles = Array.from(e.target.files).filter(f => f.type.startsWith('audio/'));
-            if(bgMusicFiles.length > 0) {
-                alert(`Loaded ${bgMusicFiles.length} background tracks. They will play when you pause.`);
-                if(!isPlaying) playBgMusic();
-            } else {
-                alert("No audio files found in that folder.");
-            }
-        });
-
         function playBgMusic() {
-            if(bgMusicFiles.length === 0 || isPlaying) return;
+            if(isPlaying) return;
+            const url = bgMusicFiles[Math.floor(Math.random() * bgMusicFiles.length)];
             
-            const file = bgMusicFiles[Math.floor(Math.random() * bgMusicFiles.length)];
-            const url = URL.createObjectURL(file);
             bgAudio.src = url;
             bgAudio.volume = 0;
             bgAudio.loop = false;
@@ -701,14 +697,10 @@
             sourceNode = audioCtx.createBufferSource();
             sourceNode.buffer = audioBuffer;
             sourceNode.playbackRate.value = playbackRate;
-            
-            // Connect Graph
             sourceNode.connect(distNode);
             distNode.connect(lpNode);
             lpNode.connect(tremoloGain);
             tremoloGain.connect(gainMaster);
-            
-            // Sends
             sourceNode.connect(delayNode).connect(delayWet).connect(gainMaster);
             sourceNode.connect(revNode).connect(revWet).connect(gainMaster);
             
@@ -730,6 +722,7 @@
         function togglePlay() {
             if (!audioBuffer) {
                 if (playlist.length > 0) loadTrack(0);
+                else playBgMusic();
                 return;
             }
             if (isPlaying) {
@@ -738,13 +731,13 @@
                 audioCtx.suspend();
                 isPlaying = false;
                 document.getElementById('btn-play').innerText = "RESUME";
-                playBgMusic(); // Start ambient
+                playBgMusic(); 
             } else {
                 anchorTime = audioCtx.currentTime;
                 audioCtx.resume();
                 isPlaying = true;
                 document.getElementById('btn-play').innerText = "PAUSE";
-                stopBgMusic(); // Stop ambient
+                stopBgMusic(); 
             }
         }
 
@@ -826,7 +819,7 @@
             const progBar = document.getElementById('render-progress-bar');
             const progInt = setInterval(() => { fakeProgress += (90 - fakeProgress) * 0.1; progBar.style.width = fakeProgress + "%"; }, 100);
 
-            await new Promise(r => setTimeout(r, 100)); // UI refresh
+            await new Promise(r => setTimeout(r, 100));
             
             const sr = audioCtx.sampleRate;
             const dur = audioBuffer.duration / playbackRate;
@@ -880,12 +873,10 @@
             const blob = bufferToWave(rendered, rendered.length);
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `rendered_${Date.now()}.${format === 'wav' ? 'wav' : 'wav'}`; // Simplified export
+            a.download = `rendered_${Date.now()}.${format === 'wav' ? 'wav' : 'wav'}`;
             a.click();
             setTimeout(() => closeModal('save'), 1000);
         }
-
-        // File handling
         document.body.addEventListener('dragover', e => e.preventDefault());
         document.body.addEventListener('drop', e => {
             e.preventDefault();
@@ -898,8 +889,6 @@
             updatePlaylistUI();
             if (currentTrackIndex === -1 && playlist.length > 0) loadTrack(0);
         }
-
-        // NEW: Remove Track Function
         window.removeTrack = (index) => {
             if (index === currentTrackIndex) {
                 if (sourceNode) { try { sourceNode.stop(); } catch(e){} }
@@ -910,7 +899,7 @@
                 document.getElementById('btn-play').innerText = "PLAY";
                 document.getElementById('progress-fill').style.width = "0%";
                 document.getElementById('time-display').innerText = "00:00 / 00:00";
-                playBgMusic(); // Resume ambient
+                playBgMusic();
             } else if (index < currentTrackIndex) {
                 currentTrackIndex--;
             }
@@ -934,7 +923,6 @@
                     span.style.textOverflow = "ellipsis";
                     span.style.whiteSpace = "nowrap";
 
-                    // Use Ø as requested
                     const del = document.createElement('span');
                     del.innerText = "Ø"; 
                     del.className = "delete-btn";
@@ -949,8 +937,6 @@
             });
         }
         window.filterPlaylist = updatePlaylistUI;
-
-        // FX Generation
         const fxConfig = [
             { id: 'echo', name: 'ECHO (DELAY)', def: 0 },
             { id: 'reverb', name: 'REVERB (SPACE)', def: 0 },
@@ -986,8 +972,6 @@
             }
             if (id === 'trem') window.lfoAmp.gain.setTargetAtTime(v, t, 0.1);
         };
-
-        // Canvas/Visuals
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
@@ -1176,6 +1160,7 @@
             });
             container.appendChild(img);
             fxTab.appendChild(container);
+            setTimeout(playBgMusic, 1000);
         });
     </script>
 </body>
