@@ -221,13 +221,6 @@
         canvas { position: absolute; top: 0; left: 0; z-index: 0; }
         #file-input { display: none; }
 
-        #exit-zen-btn {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: none; background: rgba(0,0,0,0.6); border: 1px solid #ff3333; color: #ff3333;
-            padding: 10px 20px; border-radius: 4px; backdrop-filter: blur(5px);
-            pointer-events: auto; animation: slideInRight 0.5s ease;
-        }
-
         @media (max-width: 800px) {
             #ui-layer { flex-direction: column; }
             #left-panel { flex: 0 0 auto; padding: 20px; max-height: 40vh; animation: none; }
@@ -238,11 +231,31 @@
             h1 { font-size: 14px; }
         }
 
+        /* Clean Mode Styles */
         body.clear-mode #right-panel { display: none !important; }
-        body.clear-mode .gui-controls { opacity: 0; pointer-events: none; }
-        body.clear-mode #time-display { opacity: 0; }
-        body.clear-mode #exit-zen-btn { display: block; }
         
+        /* Hide controls, progress bar, online stats, and extra stats in clear mode */
+        body.clear-mode .gui-controls,
+        body.clear-mode #progress-container,
+        body.clear-mode #live-users-display,
+        body.clear-mode #bpm-display,
+        body.clear-mode #total-stats { 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.5s ease;
+        }
+
+        /* Ensure Title and Time remain visible */
+        body.clear-mode #time-display, 
+        body.clear-mode h1 { 
+            opacity: 1 !important; 
+        }
+
+        /* Add a subtle cursor to indicate interaction is still possible */
+        body.clear-mode {
+            cursor: pointer;
+        }
+
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
             display: none; align-items: center; justify-content: center;
@@ -301,7 +314,6 @@
 
     <div class="scanlines"></div>
     <canvas id="visCanvas"></canvas>
-    <button id="exit-zen-btn" onclick="toggleZen()">Exit clear mode</button>
 
     <div id="ui-layer">
         <div id="left-panel">
@@ -324,7 +336,7 @@
                     <button onclick="playPrev()"><<</button>
                     <button id="btn-play" onclick="togglePlay()">PLAY</button>
                     <button onclick="playNext()">>></button>
-                    <button onclick="toggleZen()">CM</button>
+                    <button onclick="toggleZen(event)">CM</button>
                     <button onclick="openModal('info')">:3с</button>
                     
                     <input type="file" id="file-input" accept="audio/*" multiple>
@@ -578,9 +590,25 @@
             } catch (e) { console.error(e); }
         }
 
-        function toggleZen() {
+        function toggleZen(e) {
+            // Prevent the button click from immediately triggering the document click
+            if(e) e.stopPropagation();
             document.body.classList.toggle('clear-mode');
         }
+
+        // Add a global listener to exit clear mode when clicking anywhere
+        document.addEventListener('click', (e) => {
+            if (document.body.classList.contains('clear-mode')) {
+                // Remove the class to exit clear mode
+                document.body.classList.remove('clear-mode');
+                
+                // Play sound effect (optional, uses your existing click sound)
+                if(typeof clickSound !== 'undefined') {
+                    clickSound.currentTime = 0;
+                    clickSound.play().catch(()=>{});
+                }
+            }
+        });
         
         document.addEventListener('keydown', (e) => {
             if (e.key === "Control") toggleZen();
@@ -1126,8 +1154,8 @@
                     });
                     const db = firebase.database();
                     const presenceRef = db.ref('connections');
-                    const connectedRef = db.ref('.info/connected');
                     const myCon = presenceRef.push();
+                    const connectedRef = db.ref('.info/connected');
                     connectedRef.on('value', (snap) => {
                         if (snap.val() === true) { myCon.onDisconnect().remove(); myCon.set(true); }
                     });
