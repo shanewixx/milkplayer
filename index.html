@@ -690,7 +690,7 @@
             return curve;
         }
 
-        async function loadYoutube() {
+       async function loadYoutube() {
     const input = document.getElementById('yt-input');
     const url = input.value.trim();
     
@@ -707,48 +707,30 @@
     document.getElementById('track-title').innerText = "CONNECTING...";
     document.getElementById('btn-play').innerText = "WAIT";
 
-    const apiHosts = [
-        "https://pipedapi.kavin.rocks",
-        "https://api.piped.ot.ax",
-        "https://api-piped.mha.fi",
-        "https://piped-api.garudalinux.org",
-        "https://pa.il.ax"
-    ];
+    const corsProxy = "https://corsproxy.io/?";
+    
+    const pipedApi = "https://pipedapi.kavin.rocks"; 
 
-    let data = null;
-    let usedHost = "";
-    for (const host of apiHosts) {
-        try {
-            console.log("Trying host:", host);
-            const response = await fetch(`${host}/streams/${videoId}`);
-            if (response.ok) {
-                data = await response.json();
-                usedHost = host;
-                break;
-            }
-        } catch (e) {
-            console.warn(`Host ${host} failed, trying next...`);
-        }
-    }
-
-    if (!data) {
-        alert("All API servers are busy or blocked. Please try again later.");
-        document.getElementById('track-title').innerText = "API ERROR";
-        document.getElementById('btn-play').innerText = "PLAY";
-        return;
-    }
     try {
+
+        const metaUrl = `${pipedApi}/streams/${videoId}`;
+        const response = await fetch(corsProxy + encodeURIComponent(metaUrl));
+        
+        if (!response.ok) throw new Error("API Request Failed");
+        const data = await response.json();
+
         const audioStream = data.audioStreams.find(s => s.format === 'M4A') || data.audioStreams[0];
         const videoStream = data.videoStreams.find(s => s.quality === '1080p' && !s.videoOnly) || data.videoStreams[0];
 
-        if (!audioStream) throw new Error("No audio found");
+        if (!audioStream) throw new Error("No audio stream found");
 
         document.getElementById('track-title').innerText = "DOWNLOADING...";
 
-        const audioResp = await fetch(audioStream.url);
-        if (!audioResp.ok) throw new Error("Audio download failed");
+        const audioResponse = await fetch(corsProxy + encodeURIComponent(audioStream.url));
+        if (!audioResponse.ok) throw new Error("Audio Download Failed");
         
-        const arrayBuffer = await audioResp.arrayBuffer();
+        const arrayBuffer = await audioResponse.arrayBuffer();
+
         initAudio();
         stopBgMusic();
 
@@ -758,23 +740,23 @@
             songStartOffset = 0;
             if (videoStream) {
                 const bgVid = document.getElementById('bg-video');
-                bgVid.src = videoStream.url;
+                bgVid.src = videoStream.url; 
                 bgVid.muted = true;
                 bgVid.loop = true;
-                bgVid.play().catch(e => console.log("Auto-play blocked (normal)"));
+                bgVid.play().catch(e => console.log("Bg video autoplay blocked"));
             }
 
             playAudio();
             input.value = ""; 
         }, (e) => {
             console.error(e);
-            alert("Audio decode failed. The format might be unsupported.");
+            alert("Audio decode failed. The file format might be incompatible.");
         });
 
     } catch (err) {
         console.error(err);
-        alert("Failed to load media. CORS might be blocking the file download.");
-        document.getElementById('track-title').innerText = "DOWNLOAD ERROR";
+        alert("Failed to load. The proxy might be busy or the video is region-locked.");
+        document.getElementById('track-title').innerText = "ERROR";
         document.getElementById('btn-play').innerText = "PLAY";
     }
 }
