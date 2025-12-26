@@ -344,11 +344,11 @@
             
             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                 <div class="stat-text" id="time-display">00:00 / 00:00</div>
-                <div class="stat-text" id="bpm-display">BPM: ---</div>
+                <div class="stat-text" id="bpm-display">Bpm (might be inaccurate): ---</div>
             </div>
             
-            <div class="stat-text" id="live-users-display">ONLINE: ...</div>
-            <div class="sub-stat" id="total-stats">Session: 00:00:00</div>
+            <div class="stat-text" id="live-users-display">Drinking milk: ...</div>
+            <div class="sub-stat" id="total-stats">You were on the site for: 00:00:00</div>
             
             <div id="progress-container" onclick="seekAudio(event)">
                 <div id="progress-fill"></div>
@@ -367,11 +367,11 @@
                 </div>
                 <div class="slider-row">
                     <div class="slider-group">
-                        <label id="lbl-rate">RATE: 1.00x</label>
+                        <label id="lbl-rate">Speed: 1.00x</label>
                         <input type="range" id="rate-slider" min="50" max="200" value="100" oninput="updateSpeed(this.value)">
                     </div>
                     <div class="slider-group">
-                        <label id="lbl-vol">VOL: 100%</label>
+                        <label id="lbl-vol">Volume: 100%</label>
                         <input type="range" id="vol-slider" min="0" max="150" value="100" oninput="updateVol(this.value)">
                     </div>
                 </div>
@@ -380,9 +380,9 @@
 
         <div id="right-panel">
             <div class="tabs">
-                <div class="tab" onclick="openTab('playlist')">TRACKS</div>
-                <div class="tab active" onclick="openTab('fx')">FX</div>
-                <div class="tab" onclick="openTab('vis')">VISUALS</div>
+                <div class="tab" onclick="openTab('playlist')">Playlist</div>
+                <div class="tab active" onclick="openTab('fx')">Effects</div>
+                <div class="tab" onclick="openTab('vis')">Visuals</div>
             </div>
             <div id="tab-playlist" class="tab-content">
                 <input type="text" id="search-bar" placeholder="SEARCH..." onkeyup="filterPlaylist()">
@@ -391,15 +391,15 @@
             <div id="tab-fx" class="tab-content active"></div>
             <div id="tab-vis" class="tab-content">
                 <div class="fx-group">
-                    <div class="fx-title">MODE</div>
+                    <div class="fx-title">Effects</div>
                     <select id="vis-mode" style="width: 100%; background: #110000; color: red; border: 1px solid #440000; padding: 5px; font-family: inherit;" onchange="saveUserSettings()">
-                        <option value="Waveform">Waveform (32-bit)</option>
-                        <option value="Linear Bars">Linear Bars</option>
-                        <option value="Circular Wave">Circular Wave</option>
+                        <option value="Waveform">Waveform)</option>
+                        <option value="Linear Bars">Bars thingy</option>
+                        <option value="Circular Wave">Circle wave (lol??)</option>
                     </select>
                 </div>
                 <div class="fx-group">
-                    <div class="fx-title">ELEMENTS</div>
+                    <div class="fx-title">Settings</div>
                     <label><input type="checkbox" id="chk-particles" checked onchange="saveUserSettings()"> Show Particles</label><br>
                     <label><input type="checkbox" id="chk-mouse" checked onchange="saveUserSettings()"> Mouse Trail</label><br>
                 </div>
@@ -755,14 +755,14 @@
                 anchorTime = now;
             }
             playbackRate = newRate;
-            document.getElementById('lbl-rate').innerText = `RATE: ${playbackRate.toFixed(2)}x`;
+            document.getElementById('lbl-rate').innerText = `Speed: ${playbackRate.toFixed(2)}x`;
             if (sourceNode) sourceNode.playbackRate.value = playbackRate;
             saveUserSettings();
         }
 
         function updateVol(val) {
             volume = val / 100;
-            document.getElementById('lbl-vol').innerText = `VOL: ${val}%`;
+            document.getElementById('lbl-vol').innerText = `Volume: ${val}%`;
             if (gainMaster) gainMaster.gain.value = volume;
             saveUserSettings();
         }
